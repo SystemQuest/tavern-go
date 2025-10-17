@@ -226,6 +226,35 @@ Benchmarks compared to Tavern-Python:
 | 100 Tests | 5s | 0.5s | 10x |
 | Memory Usage | 50MB | 10MB | 5x |
 
+## Examples
+
+We provide several ready-to-run examples to help you get started:
+
+### 📖 [Minimal Example](./examples/minimal/) - 5 minutes
+The simplest possible test - great for understanding the basics.
+```bash
+cd examples/minimal
+../../tavern-go minimal.tavern.yaml
+```
+
+### 🔨 [Simple Example](./examples/simple/) - 15 minutes
+POST requests, JSON validation, error handling, and a Go test server.
+```bash
+cd examples/simple
+make quick-test  # Automatic: starts server, runs tests, stops server
+```
+
+Or manually:
+```bash
+make server  # Terminal 1
+make test    # Terminal 2
+```
+
+### 🚀 [Advanced Example](./examples/advanced/) - Coming Soon
+JWT authentication, database integration, multi-stage workflows, and more.
+
+**See [examples/README.md](./examples/README.md) for detailed guides.**
+
 ## Development
 
 ### Prerequisites
@@ -247,7 +276,11 @@ make test
 ### Run Examples
 
 ```bash
-make examples
+# Test minimal example
+cd examples/minimal && ../../tavern-go minimal.tavern.yaml
+
+# Test simple example
+cd examples/simple && make quick-test
 ```
 
 ## Project Structure
