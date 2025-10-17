@@ -165,7 +165,7 @@ func (c *Client) buildRequest(spec schema.RequestSpec) (*http.Request, error) {
 
 	// Build URL with query parameters
 	requestURL := spec.URL
-	if spec.Params != nil && len(spec.Params) > 0 {
+	if len(spec.Params) > 0 {
 		parsedURL, err := url.Parse(spec.URL)
 		if err != nil {
 			return nil, fmt.Errorf("invalid URL: %w", err)
