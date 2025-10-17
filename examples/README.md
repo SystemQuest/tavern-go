@@ -45,7 +45,7 @@ make test
 
 ---
 
-### 3. [Advanced](./advanced/) - 高级示例 ⭐⭐⭐⭐ (即将推出)
+### 3. [Advanced](./advanced/) - 高级示例 ⭐⭐⭐⭐
 **难度**: 进阶  
 **学习时间**: 30-45 分钟
 
@@ -54,9 +54,27 @@ make test
 **学习要点**:
 - JWT 身份认证
 - 变量保存与传递
-- YAML includes 和锚点
-- 扩展函数使用
+- YAML 锚点重用
 - 数据库状态管理
+- 完整 CRUD 工作流
+- 错误处理测试
+
+```bash
+cd advanced
+# 首次运行需要安装依赖
+make deps
+
+# 启动服务器
+make server
+
+# 在新终端运行测试
+make test
+```
+
+或使用自动化命令：
+```bash
+make quick-test  # 自动启动、测试、停止
+```
 
 ---
 

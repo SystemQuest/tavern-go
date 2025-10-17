@@ -2,9 +2,14 @@
 bin/
 *.exe
 *.out
+tavern-go
 
 # Server process ID files
 .server.pid
+
+# Database files
+*.db
+*.db-journal
 
 # OS specific
 .DS_Store

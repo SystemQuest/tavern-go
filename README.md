@@ -250,8 +250,13 @@ make server  # Terminal 1
 make test    # Terminal 2
 ```
 
-### 🚀 [Advanced Example](./examples/advanced/) - Coming Soon
-JWT authentication, database integration, multi-stage workflows, and more.
+### 🚀 [Advanced Example](./examples/advanced/) - 30-45 minutes
+JWT authentication, database integration, multi-stage workflows, YAML anchors.
+```bash
+cd examples/advanced
+make deps      # First time only
+make quick-test  # Automated testing
+```
 
 **See [examples/README.md](./examples/README.md) for detailed guides.**
 

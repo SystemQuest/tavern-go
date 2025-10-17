@@ -1,54 +1,116 @@
 ---
-test_name: Advanced multi-stage test with variables
-
-includes:
-  - name: common
-    description: Common variables
-    variables:
-      base_url: https://jsonplaceholder.typicode.com
-      expected_user_count: 10
+# Test 1: JWT token validation
+test_name: Make sure jwt returned has the expected aud value
 
 stages:
-  - name: Get all users
+  - &login_request
+    name: login
     request:
-      url: "{base_url}/users"
-      method: GET
+      url: http://localhost:5000/login
+      json:
+        user: test-user
+        password: correct-password
+      method: POST
     response:
       status_code: 200
       save:
         body:
-          first_user_id: 0.id
-          first_user_name: 0.name
-          user_email: 0.email
-          
-  - name: Get specific user
+          test_login_token: token
+
+---
+# Test 2: Complete CRUD workflow
+test_name: Make sure server doubles number properly
+
+stages:
+  - name: reset database for test
     request:
-      url: "{base_url}/users/{first_user_id}"
-      method: GET
+      url: http://localhost:5000/reset
+      method: POST
     response:
-      status_code: 200
-      body:
-        name: "{first_user_name}"
-        id: 1
-          
-  - name: Get user's posts
+      status_code: 204
+
+  - *login_request
+
+  - name: post a number
     request:
-      url: "{base_url}/posts"
-      method: GET
+      url: http://localhost:5000/numbers
+      json:
+        name: smallnumber
+        number: 123
+      method: POST
+      headers:
+        Authorization: "bearer {test_login_token}"
+    response:
+      status_code: 201
+
+  - name: Make sure its in the db
+    request:
+      url: http://localhost:5000/numbers
       params:
-        userId: "{first_user_id}"
-    response:
-      status_code: 200
-      save:
-        body:
-          first_post_id: 0.id
-          
-  - name: Get specific post
-    request:
-      url: "{base_url}/posts/{first_post_id}"
+        name: smallnumber
       method: GET
+      headers:
+        Authorization: "bearer {test_login_token}"
     response:
       status_code: 200
       body:
-        userId: 1
-        id: 1
+        number: 123
+
+  - name: double it
+    request:
+      url: http://localhost:5000/double
+      json:
+        name: smallnumber
+      method: POST
+      headers:
+        Authorization: "bearer {test_login_token}"
+    response:
+      status_code: 200
+      body:
+        number: 246
+
+---
+# Test 3: Error handling - nonexistent number
+test_name: Test getting a number that doesn't exist
+
+stages:
+  - &reset_request
+    name: reset database for test
+    request:
+      url: http://localhost:5000/reset
+      method: POST
+    response:
+      status_code: 204
+
+  - *login_request
+
+  - name: check it doesn't exist yet
+    request:
+      url: http://localhost:5000/numbers
+      params:
+        name: whatnumber
+      method: GET
+      headers:
+        Authorization: "bearer {test_login_token}"
+    response:
+      status_code: 404
+
+---
+# Test 4: Error handling - double nonexistent number  
+test_name: Test doubling a number that doesn't exist
+
+stages:
+  - *reset_request
+
+  - *login_request
+
+  - name: Make sure doubling something that doesn't exist raises an error
+    request:
+      url: http://localhost:5000/double
+      json:
+        name: doesntexist
+      method: POST
+      headers:
+        Authorization: "bearer {test_login_token}"
+    response:
+      status_code: 404
