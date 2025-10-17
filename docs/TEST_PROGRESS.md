@@ -8,6 +8,31 @@
 
 ---
 
+## ✅ Phase 2A 完成 - Response Validator 测试
+
+**日期**: 2025-10-18  
+**状态**: ✅ 完成  
+**测试通过率**: 20/20 (100%)
+
+---
+
+## ✅ Phase 2B 完成 - Core Runner 测试
+
+**日期**: 2025-10-18  
+**状态**: ✅ 完成  
+**测试通过率**: 12/12 (100%)
+
+---
+
+## 📊 总体进度
+
+**当前状态**: Phase 2B 完成  
+**总测试数**: 51 个（16 + 20 + 12 + 3）  
+**通过率**: 100%  
+**代码覆盖**: 预估 ~85%
+
+---
+
 ## 📊 测试覆盖情况
 
 ### pkg/request/client_test.go
@@ -143,22 +168,54 @@ github.com/systemquest/tavern-go/pkg/request/client.go: 85.2%
 **预计时间**: 2-3 天  
 **预计行数**: 400-500 行
 
-### Phase 2B: Core Runner 测试 (优先级: P0)
+### ✅ Phase 2B: Core Runner 测试 (已完成)
 
-**目标文件**: `pkg/core/runner_test.go`
+**目标文件**: `pkg/core/runner_test.go`  
+**完成日期**: 2025-10-18  
+**状态**: ✅ 完成
 
-**计划测试** (8个):
-1. ✅ `TestRunner_Success` - 成功执行
-2. ✅ `TestRunner_InvalidStatusCode` - 错误状态码
-3. ✅ `TestRunner_InvalidBody` - 错误响应体
-4. ✅ `TestRunner_InvalidHeaders` - 错误 Header
-5. ✅ `TestRunner_MultiStage` - 多阶段执行
-6. ✅ `TestRunner_VariableFlow` - 变量流转
-7. ✅ `TestRunner_GlobalConfig` - 全局配置
-8. ✅ `TestRunner_IncludeFiles` - Include 文件
+**已实现测试** (12个):
+1. ✅ `TestRunner_Success` - 成功执行完整测试
+2. ✅ `TestRunner_InvalidStatusCode` - 错误状态码处理
+3. ✅ `TestRunner_InvalidBody` - 错误响应体处理
+4. ✅ `TestRunner_InvalidHeaders` - 错误 Header 处理
+5. ✅ `TestRunner_MultiStage` - 多阶段测试执行
+6. ✅ `TestRunner_VariableFlow` - 变量在阶段间传递
+7. ✅ `TestRunner_GlobalConfig` - 全局配置加载
+8. ✅ `TestRunner_IncludeFiles` - YAML include 处理
+9. ✅ `TestRunner_SetAndGetVariable` - 变量管理
+10. ✅ `TestRunner_ValidateFile` - 文件验证（不运行）
+11. ✅ `TestRunner_VerboseLogging` - 详细日志配置
+12. ✅ `TestRunner_DebugLogging` - 调试日志配置
 
-**预计时间**: 2-3 天  
-**预计行数**: 350-450 行
+**实际行数**: 483 行  
+**执行时间**: < 1s (cached)  
+**覆盖功能**: 
+- ✅ 完整测试执行流程
+- ✅ 多阶段测试编排
+- ✅ 变量传递和管理
+- ✅ 错误处理和验证
+- ✅ 全局配置和 includes
+- ✅ 日志级别控制
+
+### Phase 3: 集成测试 (优先级: P1)
+
+**目标目录**: `tests/integration/`
+
+**计划测试** (10个):
+1. ⏳ `TestIntegration_FullWorkflow` - 完整工作流
+2. ⏳ `TestIntegration_MultiStageAuth` - 多阶段认证
+3. ⏳ `TestIntegration_VariableChaining` - 变量链式传递
+4. ⏳ `TestIntegration_ErrorRecovery` - 错误恢复
+5. ⏳ `TestIntegration_FileLoading` - YAML 文件加载
+6. ⏳ `TestIntegration_GlobalConfigOverride` - 配置覆盖
+7. ⏳ `TestIntegration_ComplexValidation` - 复杂验证
+8. ⏳ `TestIntegration_ExtensionUsage` - 扩展函数使用
+9. ⏳ `TestIntegration_RealAPICall` - 真实 API 调用
+10. ⏳ `TestIntegration_PerformanceTest` - 性能测试
+
+**预计时间**: 3-4 天  
+**预计行数**: 600-800 行
 
 ---
 
@@ -219,13 +276,85 @@ func TestClient_DefaultMethodWithBody(t *testing.T) {
 
 - ✅ **2025-10-18**: 测试迁移计划完成
 - ✅ **2025-10-18**: Phase 1 完成 - Request Client 测试 (16 tests)
-- ⏳ **2025-10-19**: Phase 2A - Response Validator 测试
-- ⏳ **2025-10-20**: Phase 2B - Core Runner 测试
-- ⏳ **2025-10-21**: Phase 3 - 集成测试
+- ✅ **2025-10-18**: Phase 2A 完成 - Response Validator 测试 (20 tests)
+- ✅ **2025-10-18**: Phase 2B 完成 - Core Runner 测试 (12 tests)
+- ⏳ **2025-10-21**: Phase 3 - 集成测试 (计划中)
 
 ---
 
-**报告版本**: 1.0  
+## 📈 Phase 2B 详细报告
+
+### pkg/core/runner_test.go
+
+| # | 测试名称 | 对应 Python 测试 | 状态 | 覆盖功能 |
+|---|----------|------------------|------|----------|
+| 1 | `TestRunner_Success` | `test_success` | ✅ PASS | 成功执行单阶段测试 |
+| 2 | `TestRunner_InvalidStatusCode` | `test_invalid_code` | ✅ PASS | 错误状态码检测 |
+| 3 | `TestRunner_InvalidBody` | `test_invalid_body` | ✅ PASS | 错误响应体检测 |
+| 4 | `TestRunner_InvalidHeaders` | `test_invalid_headers` | ✅ PASS | 错误 Header 检测 |
+| 5 | `TestRunner_MultiStage` | 多个 | ✅ PASS | 多阶段测试执行 |
+| 6 | `TestRunner_VariableFlow` | 多个 | ✅ PASS | 变量跨阶段传递 |
+| 7 | `TestRunner_GlobalConfig` | 多个 | ✅ PASS | 全局配置加载 |
+| 8 | `TestRunner_IncludeFiles` | 多个 | ✅ PASS | Include 变量处理 |
+| 9 | `TestRunner_SetAndGetVariable` | N/A | ✅ PASS | 变量设置和获取 |
+| 10 | `TestRunner_ValidateFile` | N/A | ✅ PASS | 文件验证（不运行）|
+| 11 | `TestRunner_VerboseLogging` | N/A | ✅ PASS | 详细日志配置 |
+| 12 | `TestRunner_DebugLogging` | N/A | ✅ PASS | 调试日志配置 |
+
+**测试代码行数**: 483 行  
+**执行时间**: < 1s  
+**覆盖率**: ~90% (估算)
+
+### test_core.py 对齐度
+
+| Python 测试 | Go 测试 | 状态 |
+|-------------|---------|------|
+| `test_success` | `TestRunner_Success` | ✅ 已覆盖 |
+| `test_invalid_code` | `TestRunner_InvalidStatusCode` | ✅ 已覆盖 |
+| `test_invalid_body` | `TestRunner_InvalidBody` | ✅ 已覆盖 |
+| `test_invalid_headers` | `TestRunner_InvalidHeaders` | ✅ 已覆盖 |
+| 多阶段测试（隐式） | `TestRunner_MultiStage` | ✅ 已覆盖 |
+| 变量传递（隐式） | `TestRunner_VariableFlow` | ✅ 已覆盖 |
+
+**对齐度**: 100% - 核心功能完全覆盖
+
+### 关键测试场景
+
+#### 1. 变量流转测试
+```go
+// Stage 1: 获取 token
+Response: {
+    Save: &SaveSpec{
+        Body: map[string]string{
+            "auth_token": "token",
+        },
+    },
+}
+
+// Stage 2: 使用 token
+Request: {
+    Headers: map[string]string{
+        "Authorization": "Bearer {auth_token}",
+    },
+}
+```
+
+验证了变量能正确在阶段间传递并替换。
+
+#### 2. 多阶段执行
+测试了服务器被调用两次，确保所有阶段都按顺序执行。
+
+#### 3. 全局配置
+```yaml
+variables:
+  base_url: "http://example.com"
+  api_key: "test-key-123"
+```
+验证了从 YAML 加载全局配置并合并到测试变量。
+
+---
+
+**报告版本**: 2.0  
 **更新日期**: 2025-10-18  
 **作者**: SystemQuest Team  
-**下次更新**: Phase 2A 完成后
+**下次更新**: Phase 3 完成后
