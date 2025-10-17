@@ -1,0 +1,169 @@
+package util
+
+import (
+	"fmt"
+	"reflect"
+	"strconv"
+	"strings"
+)
+
+// FormatKeys recursively formats a value with the given variables
+func FormatKeys(val interface{}, variables map[string]interface{}) (interface{}, error) {
+	switch v := val.(type) {
+	case string:
+		return formatString(v, variables)
+	case map[string]interface{}:
+		return formatMap(v, variables)
+	case []interface{}:
+		return formatSlice(v, variables)
+	default:
+		return val, nil
+	}
+}
+
+// formatString replaces variables in a string
+func formatString(s string, variables map[string]interface{}) (string, error) {
+	result := s
+
+	// Find all {variable} patterns
+	for {
+		start := strings.Index(result, "{")
+		if start == -1 {
+			break
+		}
+
+		end := strings.Index(result[start:], "}")
+		if end == -1 {
+			break
+		}
+		end += start
+
+		varName := result[start+1 : end]
+		value, ok := variables[varName]
+		if !ok {
+			return "", NewMissingFormatError(varName)
+		}
+
+		// Convert value to string
+		var strValue string
+		switch v := value.(type) {
+		case string:
+			strValue = v
+		case int, int64, float64, bool:
+			strValue = fmt.Sprintf("%v", v)
+		default:
+			strValue = fmt.Sprintf("%v", v)
+		}
+
+		result = result[:start] + strValue + result[end+1:]
+	}
+
+	return result, nil
+}
+
+// formatMap recursively formats a map
+func formatMap(m map[string]interface{}, variables map[string]interface{}) (map[string]interface{}, error) {
+	result := make(map[string]interface{})
+	for key, val := range m {
+		formatted, err := FormatKeys(val, variables)
+		if err != nil {
+			return nil, err
+		}
+		result[key] = formatted
+	}
+	return result, nil
+}
+
+// formatSlice recursively formats a slice
+func formatSlice(s []interface{}, variables map[string]interface{}) ([]interface{}, error) {
+	result := make([]interface{}, len(s))
+	for i, val := range s {
+		formatted, err := FormatKeys(val, variables)
+		if err != nil {
+			return nil, err
+		}
+		result[i] = formatted
+	}
+	return result, nil
+}
+
+// RecurseAccessKey accesses a nested key in a map or slice using dot notation
+// Example: "user.profile.name" or "items.0.id"
+func RecurseAccessKey(data interface{}, key string) (interface{}, error) {
+	keys := strings.Split(key, ".")
+	return recurseAccessKeyList(data, keys)
+}
+
+func recurseAccessKeyList(current interface{}, keys []string) (interface{}, error) {
+	if len(keys) == 0 {
+		return current, nil
+	}
+
+	currentKey := keys[0]
+	remainingKeys := keys[1:]
+
+	switch v := current.(type) {
+	case map[string]interface{}:
+		next, ok := v[currentKey]
+		if !ok {
+			return nil, fmt.Errorf("key not found: %s", currentKey)
+		}
+		return recurseAccessKeyList(next, remainingKeys)
+
+	case []interface{}:
+		idx, err := strconv.Atoi(currentKey)
+		if err != nil {
+			return nil, fmt.Errorf("invalid array index: %s", currentKey)
+		}
+		if idx < 0 || idx >= len(v) {
+			return nil, fmt.Errorf("index out of range: %d (length: %d)", idx, len(v))
+		}
+		return recurseAccessKeyList(v[idx], remainingKeys)
+
+	default:
+		return nil, fmt.Errorf("cannot access key %s in type %T", currentKey, current)
+	}
+}
+
+// DeepMerge recursively merges two maps
+func DeepMerge(dst, src map[string]interface{}) map[string]interface{} {
+	result := make(map[string]interface{})
+
+	// Copy dst
+	for k, v := range dst {
+		result[k] = v
+	}
+
+	// Merge src
+	for k, v := range src {
+		if existingVal, ok := result[k]; ok {
+			// If both are maps, merge recursively
+			if existingMap, ok1 := existingVal.(map[string]interface{}); ok1 {
+				if newMap, ok2 := v.(map[string]interface{}); ok2 {
+					result[k] = DeepMerge(existingMap, newMap)
+					continue
+				}
+			}
+		}
+		result[k] = v
+	}
+
+	return result
+}
+
+// DeepEqual compares two values deeply
+func DeepEqual(a, b interface{}) bool {
+	return reflect.DeepEqual(a, b)
+}
+
+// ToMap converts an interface{} to map[string]interface{} if possible
+func ToMap(val interface{}) (map[string]interface{}, bool) {
+	m, ok := val.(map[string]interface{})
+	return m, ok
+}
+
+// ToSlice converts an interface{} to []interface{} if possible
+func ToSlice(val interface{}) ([]interface{}, bool) {
+	s, ok := val.([]interface{})
+	return s, ok
+}

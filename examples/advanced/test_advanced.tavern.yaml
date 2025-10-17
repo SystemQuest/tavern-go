@@ -1,0 +1,54 @@
+---
+test_name: Advanced multi-stage test with variables
+
+includes:
+  - name: common
+    description: Common variables
+    variables:
+      base_url: https://jsonplaceholder.typicode.com
+      expected_user_count: 10
+
+stages:
+  - name: Get all users
+    request:
+      url: "{base_url}/users"
+      method: GET
+    response:
+      status_code: 200
+      save:
+        body:
+          first_user_id: 0.id
+          first_user_name: 0.name
+          user_email: 0.email
+          
+  - name: Get specific user
+    request:
+      url: "{base_url}/users/{first_user_id}"
+      method: GET
+    response:
+      status_code: 200
+      body:
+        name: "{first_user_name}"
+        id: 1
+          
+  - name: Get user's posts
+    request:
+      url: "{base_url}/posts"
+      method: GET
+      params:
+        userId: "{first_user_id}"
+    response:
+      status_code: 200
+      save:
+        body:
+          first_post_id: 0.id
+          
+  - name: Get specific post
+    request:
+      url: "{base_url}/posts/{first_post_id}"
+      method: GET
+    response:
+      status_code: 200
+      body:
+        userId: 1
+        id: 1

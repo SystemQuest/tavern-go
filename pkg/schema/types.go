@@ -1,0 +1,65 @@
+package schema
+
+// TestSpec represents a complete test specification
+type TestSpec struct {
+	TestName string    `yaml:"test_name" json:"test_name"`
+	Includes []Include `yaml:"includes,omitempty" json:"includes,omitempty"`
+	Stages   []Stage   `yaml:"stages" json:"stages"`
+}
+
+// Include represents an include block with variables
+type Include struct {
+	Name        string                 `yaml:"name" json:"name"`
+	Description string                 `yaml:"description,omitempty" json:"description,omitempty"`
+	Variables   map[string]interface{} `yaml:"variables,omitempty" json:"variables,omitempty"`
+}
+
+// Stage represents a single test stage
+type Stage struct {
+	Name     string       `yaml:"name" json:"name"`
+	Request  RequestSpec  `yaml:"request" json:"request"`
+	Response ResponseSpec `yaml:"response" json:"response"`
+}
+
+// RequestSpec represents an HTTP request specification
+type RequestSpec struct {
+	Method  string            `yaml:"method,omitempty" json:"method,omitempty"`
+	URL     string            `yaml:"url" json:"url"`
+	Headers map[string]string `yaml:"headers,omitempty" json:"headers,omitempty"`
+	JSON    interface{}       `yaml:"json,omitempty" json:"json,omitempty"`
+	Data    interface{}       `yaml:"data,omitempty" json:"data,omitempty"`
+	Params  map[string]string `yaml:"params,omitempty" json:"params,omitempty"`
+	Auth    *AuthSpec         `yaml:"auth,omitempty" json:"auth,omitempty"`
+	Files   map[string]string `yaml:"files,omitempty" json:"files,omitempty"`
+	Cookies map[string]string `yaml:"cookies,omitempty" json:"cookies,omitempty"`
+}
+
+// AuthSpec represents authentication configuration
+type AuthSpec struct {
+	Type     string `yaml:"type,omitempty" json:"type,omitempty"` // basic, bearer, etc.
+	Username string `yaml:"username,omitempty" json:"username,omitempty"`
+	Password string `yaml:"password,omitempty" json:"password,omitempty"`
+	Token    string `yaml:"token,omitempty" json:"token,omitempty"`
+}
+
+// ResponseSpec represents expected HTTP response
+type ResponseSpec struct {
+	StatusCode int                    `yaml:"status_code,omitempty" json:"status_code,omitempty"`
+	Headers    map[string]interface{} `yaml:"headers,omitempty" json:"headers,omitempty"`
+	Body       interface{}            `yaml:"body,omitempty" json:"body,omitempty"`
+	Save       *SaveSpec              `yaml:"save,omitempty" json:"save,omitempty"`
+}
+
+// SaveSpec specifies what to save from the response
+type SaveSpec struct {
+	Body                map[string]string `yaml:"body,omitempty" json:"body,omitempty"`
+	Headers             map[string]string `yaml:"headers,omitempty" json:"headers,omitempty"`
+	RedirectQueryParams map[string]string `yaml:"redirect_query_params,omitempty" json:"redirect_query_params,omitempty"`
+}
+
+// ExtSpec represents an extension function specification
+type ExtSpec struct {
+	Function    string                 `yaml:"function" json:"function"`
+	ExtraArgs   []interface{}          `yaml:"extra_args,omitempty" json:"extra_args,omitempty"`
+	ExtraKwargs map[string]interface{} `yaml:"extra_kwargs,omitempty" json:"extra_kwargs,omitempty"`
+}

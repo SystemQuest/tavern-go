@@ -1,0 +1,288 @@
+package request
+
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
+	"net/url"
+	"strings"
+	"time"
+
+	"github.com/systemquest/tavern-go/pkg/extension"
+	"github.com/systemquest/tavern-go/pkg/schema"
+	"github.com/systemquest/tavern-go/pkg/util"
+)
+
+// Client handles HTTP requests
+type Client struct {
+	httpClient *http.Client
+	config     *Config
+}
+
+// Config holds request configuration
+type Config struct {
+	Variables map[string]interface{}
+	Timeout   time.Duration
+}
+
+// NewClient creates a new HTTP client
+func NewClient(config *Config) *Client {
+	if config == nil {
+		config = &Config{
+			Variables: make(map[string]interface{}),
+			Timeout:   30 * time.Second,
+		}
+	}
+
+	return &Client{
+		httpClient: &http.Client{
+			Timeout: config.Timeout,
+			CheckRedirect: func(req *http.Request, via []*http.Request) error {
+				// Don't follow redirects automatically
+				return http.ErrUseLastResponse
+			},
+		},
+		config: config,
+	}
+}
+
+// Execute executes an HTTP request
+func (c *Client) Execute(spec schema.RequestSpec) (*http.Response, error) {
+	// Format the request spec with variables
+	formattedSpec, err := c.formatRequestSpec(spec)
+	if err != nil {
+		return nil, fmt.Errorf("failed to format request: %w", err)
+	}
+
+	// Build the request
+	req, err := c.buildRequest(formattedSpec)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build request: %w", err)
+	}
+
+	// Execute the request
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("request failed: %w", err)
+	}
+
+	return resp, nil
+}
+
+// formatRequestSpec formats the request spec with variables
+func (c *Client) formatRequestSpec(spec schema.RequestSpec) (schema.RequestSpec, error) {
+	formatted := spec
+
+	// Format URL
+	if spec.URL != "" {
+		formattedURL, err := util.FormatKeys(spec.URL, c.config.Variables)
+		if err != nil {
+			return formatted, err
+		}
+		formatted.URL = formattedURL.(string)
+	}
+
+	// Format headers
+	if spec.Headers != nil {
+		formattedHeaders := make(map[string]string)
+		for k, v := range spec.Headers {
+			formattedVal, err := util.FormatKeys(v, c.config.Variables)
+			if err != nil {
+				return formatted, err
+			}
+			formattedHeaders[k] = formattedVal.(string)
+		}
+		formatted.Headers = formattedHeaders
+	}
+
+	// Format params
+	if spec.Params != nil {
+		formattedParams := make(map[string]string)
+		for k, v := range spec.Params {
+			formattedVal, err := util.FormatKeys(v, c.config.Variables)
+			if err != nil {
+				return formatted, err
+			}
+			formattedParams[k] = formattedVal.(string)
+		}
+		formatted.Params = formattedParams
+	}
+
+	// Format JSON body
+	if spec.JSON != nil {
+		formattedJSON, err := util.FormatKeys(spec.JSON, c.config.Variables)
+		if err != nil {
+			return formatted, err
+		}
+		formatted.JSON = formattedJSON
+	}
+
+	// Check for $ext in JSON
+	if formatted.JSON != nil {
+		if jsonMap, ok := formatted.JSON.(map[string]interface{}); ok {
+			if extSpec, ok := jsonMap["$ext"]; ok {
+				generated, err := c.generateFromExt(extSpec)
+				if err != nil {
+					return formatted, err
+				}
+				formatted.JSON = generated
+			}
+		}
+	}
+
+	return formatted, nil
+}
+
+// generateFromExt generates data using an extension function
+func (c *Client) generateFromExt(extSpec interface{}) (interface{}, error) {
+	extMap, ok := extSpec.(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("$ext must be a map")
+	}
+
+	functionName, ok := extMap["function"].(string)
+	if !ok {
+		return nil, fmt.Errorf("$ext.function must be a string")
+	}
+
+	generator, err := extension.GetGenerator(functionName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get generator: %w", err)
+	}
+
+	return generator(), nil
+}
+
+// buildRequest builds an HTTP request
+func (c *Client) buildRequest(spec schema.RequestSpec) (*http.Request, error) {
+	// Default method to GET
+	method := spec.Method
+	if method == "" {
+		method = "GET"
+	}
+
+	// Build URL with query parameters
+	requestURL := spec.URL
+	if spec.Params != nil && len(spec.Params) > 0 {
+		parsedURL, err := url.Parse(spec.URL)
+		if err != nil {
+			return nil, fmt.Errorf("invalid URL: %w", err)
+		}
+
+		query := parsedURL.Query()
+		for k, v := range spec.Params {
+			query.Add(k, v)
+		}
+		parsedURL.RawQuery = query.Encode()
+		requestURL = parsedURL.String()
+	}
+
+	// Build request body
+	var body io.Reader
+	var contentType string
+
+	if spec.JSON != nil {
+		jsonData, err := json.Marshal(spec.JSON)
+		if err != nil {
+			return nil, fmt.Errorf("failed to marshal JSON: %w", err)
+		}
+		body = bytes.NewReader(jsonData)
+		contentType = "application/json"
+	} else if spec.Data != nil {
+		// Handle form data
+		switch v := spec.Data.(type) {
+		case string:
+			body = strings.NewReader(v)
+			contentType = "application/x-www-form-urlencoded"
+		case map[string]interface{}:
+			values := url.Values{}
+			for key, val := range v {
+				values.Add(key, fmt.Sprintf("%v", val))
+			}
+			body = strings.NewReader(values.Encode())
+			contentType = "application/x-www-form-urlencoded"
+		default:
+			return nil, fmt.Errorf("unsupported data type: %T", spec.Data)
+		}
+	}
+
+	// Validate GET request doesn't have body
+	if method == "GET" && body != nil {
+		return nil, util.NewTavernError("GET request cannot have a body", nil)
+	}
+
+	// Create request
+	req, err := http.NewRequest(method, requestURL, body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	// Set content type if we have a body
+	if contentType != "" {
+		req.Header.Set("Content-Type", contentType)
+	}
+
+	// Set headers
+	if spec.Headers != nil {
+		for k, v := range spec.Headers {
+			req.Header.Set(k, v)
+		}
+	}
+
+	// Override content-type if explicitly set
+	if spec.Headers != nil {
+		for k, v := range spec.Headers {
+			if strings.ToLower(k) == "content-type" {
+				req.Header.Set("Content-Type", v)
+				break
+			}
+		}
+	}
+
+	// Set authentication
+	if spec.Auth != nil {
+		if err := c.setAuth(req, spec.Auth); err != nil {
+			return nil, err
+		}
+	}
+
+	// Set cookies
+	if spec.Cookies != nil {
+		for k, v := range spec.Cookies {
+			req.AddCookie(&http.Cookie{
+				Name:  k,
+				Value: v,
+			})
+		}
+	}
+
+	return req, nil
+}
+
+// setAuth sets authentication on the request
+func (c *Client) setAuth(req *http.Request, auth *schema.AuthSpec) error {
+	switch strings.ToLower(auth.Type) {
+	case "basic":
+		if auth.Username == "" || auth.Password == "" {
+			return fmt.Errorf("basic auth requires username and password")
+		}
+		req.SetBasicAuth(auth.Username, auth.Password)
+
+	case "bearer":
+		if auth.Token == "" {
+			return fmt.Errorf("bearer auth requires token")
+		}
+		req.Header.Set("Authorization", "Bearer "+auth.Token)
+
+	default:
+		if auth.Token != "" {
+			req.Header.Set("Authorization", "Bearer "+auth.Token)
+		} else if auth.Username != "" && auth.Password != "" {
+			req.SetBasicAuth(auth.Username, auth.Password)
+		}
+	}
+
+	return nil
+}

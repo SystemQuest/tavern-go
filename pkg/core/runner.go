@@ -1,0 +1,235 @@
+package core
+
+import (
+	"fmt"
+
+	"github.com/sirupsen/logrus"
+	"github.com/systemquest/tavern-go/pkg/request"
+	"github.com/systemquest/tavern-go/pkg/response"
+	"github.com/systemquest/tavern-go/pkg/schema"
+	"github.com/systemquest/tavern-go/pkg/util"
+	yamlpkg "github.com/systemquest/tavern-go/pkg/yaml"
+)
+
+// Runner executes Tavern tests
+type Runner struct {
+	config    *Config
+	loader    *yamlpkg.Loader
+	validator *schema.Validator
+	logger    *logrus.Logger
+}
+
+// Config holds runner configuration
+type Config struct {
+	BaseDir      string
+	GlobalConfig map[string]interface{}
+	Variables    map[string]interface{}
+	Verbose      bool
+	Debug        bool
+}
+
+// NewRunner creates a new test runner
+func NewRunner(config *Config) (*Runner, error) {
+	if config == nil {
+		config = &Config{
+			BaseDir:   ".",
+			Variables: make(map[string]interface{}),
+		}
+	}
+
+	if config.GlobalConfig == nil {
+		config.GlobalConfig = make(map[string]interface{})
+	}
+
+	if config.Variables == nil {
+		config.Variables = make(map[string]interface{})
+	}
+
+	// Create logger
+	logger := logrus.New()
+	if config.Debug {
+		logger.SetLevel(logrus.DebugLevel)
+	} else if config.Verbose {
+		logger.SetLevel(logrus.InfoLevel)
+	} else {
+		logger.SetLevel(logrus.WarnLevel)
+	}
+
+	// Create schema validator
+	validator, err := schema.NewValidator()
+	if err != nil {
+		return nil, fmt.Errorf("failed to create validator: %w", err)
+	}
+
+	return &Runner{
+		config:    config,
+		loader:    yamlpkg.NewLoader(config.BaseDir),
+		validator: validator,
+		logger:    logger,
+	}, nil
+}
+
+// RunFile runs all tests in a file
+func (r *Runner) RunFile(filename string) error {
+	r.logger.Infof("Loading tests from %s", filename)
+
+	// Load tests
+	tests, err := r.loader.Load(filename)
+	if err != nil {
+		return fmt.Errorf("failed to load tests: %w", err)
+	}
+
+	r.logger.Infof("Found %d test(s)", len(tests))
+
+	// Run each test
+	var firstError error
+	for i, test := range tests {
+		r.logger.Infof("Running test %d/%d: %s", i+1, len(tests), test.TestName)
+
+		// Validate test schema
+		if err := r.validator.Validate(test); err != nil {
+			r.logger.Errorf("Schema validation failed for test '%s': %v", test.TestName, err)
+			if firstError == nil {
+				firstError = err
+			}
+			continue
+		}
+
+		// Run test
+		if err := r.RunTest(test); err != nil {
+			r.logger.Errorf("Test failed: %s: %v", test.TestName, err)
+			if firstError == nil {
+				firstError = err
+			}
+			continue
+		}
+
+		r.logger.Infof("Test passed: %s", test.TestName)
+	}
+
+	return firstError
+}
+
+// RunTest runs a single test
+func (r *Runner) RunTest(test *schema.TestSpec) error {
+	r.logger.Infof("Running test: %s", test.TestName)
+
+	// Initialize test configuration
+	testConfig := &request.Config{
+		Variables: make(map[string]interface{}),
+	}
+
+	// Merge global variables
+	for k, v := range r.config.Variables {
+		testConfig.Variables[k] = v
+	}
+
+	// Merge global config variables
+	if globalVars, ok := r.config.GlobalConfig["variables"].(map[string]interface{}); ok {
+		for k, v := range globalVars {
+			testConfig.Variables[k] = v
+		}
+	}
+
+	// Process includes
+	for _, include := range test.Includes {
+		r.logger.Debugf("Processing include: %s", include.Name)
+		for k, v := range include.Variables {
+			testConfig.Variables[k] = v
+		}
+	}
+
+	// Create HTTP client
+	client := request.NewClient(testConfig)
+
+	// Run each stage
+	for i, stage := range test.Stages {
+		r.logger.Infof("Running stage %d/%d: %s", i+1, len(test.Stages), stage.Name)
+
+		// Execute request
+		resp, err := client.Execute(stage.Request)
+		if err != nil {
+			return fmt.Errorf("stage '%s' request failed: %w", stage.Name, err)
+		}
+
+		r.logger.Debugf("Response status: %d", resp.StatusCode)
+
+		// Create validator config
+		validatorConfig := &response.Config{
+			Variables: testConfig.Variables,
+		}
+
+		// Validate response
+		validator := response.NewValidator(stage.Name, stage.Response, validatorConfig)
+		saved, err := validator.Verify(resp)
+		if err != nil {
+			return fmt.Errorf("stage '%s' validation failed: %w", stage.Name, err)
+		}
+
+		// Save variables for next stages
+		for k, v := range saved {
+			r.logger.Debugf("Saved variable: %s = %v", k, v)
+			testConfig.Variables[k] = v
+		}
+
+		r.logger.Infof("Stage passed: %s", stage.Name)
+	}
+
+	return nil
+}
+
+// LoadGlobalConfig loads a global configuration file
+func (r *Runner) LoadGlobalConfig(filename string) error {
+	r.logger.Infof("Loading global config from %s", filename)
+
+	config, err := r.loader.LoadGlobalConfig(filename)
+	if err != nil {
+		return fmt.Errorf("failed to load global config: %w", err)
+	}
+
+	r.config.GlobalConfig = config
+
+	// Merge variables
+	if vars, ok := config["variables"].(map[string]interface{}); ok {
+		for k, v := range vars {
+			r.config.Variables[k] = v
+		}
+	}
+
+	return nil
+}
+
+// SetVariable sets a variable in the runner config
+func (r *Runner) SetVariable(key string, value interface{}) {
+	r.config.Variables[key] = value
+}
+
+// GetVariable gets a variable from the runner config
+func (r *Runner) GetVariable(key string) (interface{}, bool) {
+	val, ok := r.config.Variables[key]
+	return val, ok
+}
+
+// GetLogger returns the logger
+func (r *Runner) GetLogger() *logrus.Logger {
+	return r.logger
+}
+
+// ValidateFile validates a test file without running it
+func (r *Runner) ValidateFile(filename string) error {
+	tests, err := r.loader.Load(filename)
+	if err != nil {
+		return fmt.Errorf("failed to load tests: %w", err)
+	}
+
+	for _, test := range tests {
+		if err := r.validator.Validate(test); err != nil {
+			return util.NewBadSchemaError(
+				fmt.Sprintf("validation failed for test '%s'", test.TestName),
+				err,
+			)
+		}
+	}
+
+	return nil
+}

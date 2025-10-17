@@ -1,0 +1,155 @@
+package util
+
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+)
+
+func TestFormatKeys(t *testing.T) {
+	variables := map[string]interface{}{
+		"name":   "John",
+		"age":    30,
+		"active": true,
+	}
+
+	tests := []struct {
+		name     string
+		input    interface{}
+		expected interface{}
+		wantErr  bool
+	}{
+		{
+			name:     "simple string",
+			input:    "Hello {name}",
+			expected: "Hello John",
+			wantErr:  false,
+		},
+		{
+			name:     "multiple variables",
+			input:    "{name} is {age} years old",
+			expected: "John is 30 years old",
+			wantErr:  false,
+		},
+		{
+			name: "map with variables",
+			input: map[string]interface{}{
+				"greeting": "Hello {name}",
+				"age":      "{age}",
+			},
+			expected: map[string]interface{}{
+				"greeting": "Hello John",
+				"age":      "30",
+			},
+			wantErr: false,
+		},
+		{
+			name:     "missing variable",
+			input:    "Hello {missing}",
+			expected: nil,
+			wantErr:  true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := FormatKeys(tt.input, variables)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expected, result)
+			}
+		})
+	}
+}
+
+func TestRecurseAccessKey(t *testing.T) {
+	data := map[string]interface{}{
+		"user": map[string]interface{}{
+			"name": "John",
+			"profile": map[string]interface{}{
+				"age": 30,
+			},
+		},
+		"items": []interface{}{
+			map[string]interface{}{"id": 1, "name": "item1"},
+			map[string]interface{}{"id": 2, "name": "item2"},
+		},
+	}
+
+	tests := []struct {
+		name     string
+		key      string
+		expected interface{}
+		wantErr  bool
+	}{
+		{
+			name:     "simple key",
+			key:      "user.name",
+			expected: "John",
+			wantErr:  false,
+		},
+		{
+			name:     "nested key",
+			key:      "user.profile.age",
+			expected: 30,
+			wantErr:  false,
+		},
+		{
+			name:     "array access",
+			key:      "items.0.name",
+			expected: "item1",
+			wantErr:  false,
+		},
+		{
+			name:     "missing key",
+			key:      "user.missing",
+			expected: nil,
+			wantErr:  true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := RecurseAccessKey(data, tt.key)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expected, result)
+			}
+		})
+	}
+}
+
+func TestDeepMerge(t *testing.T) {
+	dst := map[string]interface{}{
+		"a": 1,
+		"b": map[string]interface{}{
+			"c": 2,
+			"d": 3,
+		},
+	}
+
+	src := map[string]interface{}{
+		"b": map[string]interface{}{
+			"d": 4,
+			"e": 5,
+		},
+		"f": 6,
+	}
+
+	expected := map[string]interface{}{
+		"a": 1,
+		"b": map[string]interface{}{
+			"c": 2,
+			"d": 4,
+			"e": 5,
+		},
+		"f": 6,
+	}
+
+	result := DeepMerge(dst, src)
+	assert.Equal(t, expected, result)
+}
