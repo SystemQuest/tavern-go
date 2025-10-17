@@ -545,3 +545,125 @@ func TestValidator_VariableSubstitutionInExpected(t *testing.T) {
 
 	assert.NoError(t, err)
 }
+
+// TestValidator_ValidateArrayResponse tests validating array responses (tavern-py bdeb7c7 feature)
+func TestValidator_ValidateArrayResponse(t *testing.T) {
+	spec := schema.ResponseSpec{
+		StatusCode: 200,
+		Body: []interface{}{
+			map[string]interface{}{"id": 1, "name": "Alice"},
+			map[string]interface{}{"id": 2, "name": "Bob"},
+		},
+	}
+
+	validator := NewValidator("test", spec, &Config{Variables: map[string]interface{}{}})
+
+	body := []interface{}{
+		map[string]interface{}{"id": 1, "name": "Alice", "extra": "field"},
+		map[string]interface{}{"id": 2, "name": "Bob"},
+	}
+
+	resp := createMockResponse(200, map[string]string{"Content-Type": "application/json"}, body)
+
+	_, err := validator.Verify(resp)
+
+	assert.NoError(t, err, "Array validation should pass")
+}
+
+// TestValidator_ValidateArrayPrimitives tests validating arrays of primitive values
+func TestValidator_ValidateArrayPrimitives(t *testing.T) {
+	spec := schema.ResponseSpec{
+		StatusCode: 200,
+		Body:       []interface{}{1, "text", 3.14},
+	}
+
+	validator := NewValidator("test", spec, &Config{Variables: map[string]interface{}{}})
+
+	body := []interface{}{1, "text", 3.14, "extra"}
+
+	resp := createMockResponse(200, map[string]string{"Content-Type": "application/json"}, body)
+
+	_, err := validator.Verify(resp)
+
+	assert.NoError(t, err, "Array of primitives validation should pass")
+}
+
+// TestValidator_ValidateNestedArray tests validating nested arrays
+func TestValidator_ValidateNestedArray(t *testing.T) {
+	spec := schema.ResponseSpec{
+		StatusCode: 200,
+		Body: []interface{}{
+			[]interface{}{1, 2, 3},
+			[]interface{}{4, 5, 6},
+		},
+	}
+
+	validator := NewValidator("test", spec, &Config{Variables: map[string]interface{}{}})
+
+	body := []interface{}{
+		[]interface{}{1, 2, 3},
+		[]interface{}{4, 5, 6},
+	}
+
+	resp := createMockResponse(200, map[string]string{"Content-Type": "application/json"}, body)
+
+	_, err := validator.Verify(resp)
+
+	assert.NoError(t, err, "Nested array validation should pass")
+}
+
+// TestValidator_ValidateArrayTypeMismatch tests error when expected array but got object
+func TestValidator_ValidateArrayTypeMismatch(t *testing.T) {
+	spec := schema.ResponseSpec{
+		StatusCode: 200,
+		Body:       []interface{}{1, 2, 3},
+	}
+
+	validator := NewValidator("test", spec, &Config{Variables: map[string]interface{}{}})
+
+	body := map[string]interface{}{"key": "value"}
+
+	resp := createMockResponse(200, map[string]string{"Content-Type": "application/json"}, body)
+
+	_, err := validator.Verify(resp)
+
+	assert.Error(t, err, "Should fail when expected array but got object")
+	assert.Contains(t, err.Error(), "expected array")
+}
+
+// TestValidator_ValidateArrayValueMismatch tests error when array values don't match
+func TestValidator_ValidateArrayValueMismatch(t *testing.T) {
+	spec := schema.ResponseSpec{
+		StatusCode: 200,
+		Body:       []interface{}{1, 2, 3},
+	}
+
+	validator := NewValidator("test", spec, &Config{Variables: map[string]interface{}{}})
+
+	body := []interface{}{1, 999, 3} // Middle value different
+
+	resp := createMockResponse(200, map[string]string{"Content-Type": "application/json"}, body)
+
+	_, err := validator.Verify(resp)
+
+	assert.Error(t, err, "Should fail when array values don't match")
+	assert.Contains(t, err.Error(), "body[1]")
+}
+
+// TestValidator_ValidateArrayPartial tests partial array validation (tavern-py behavior)
+func TestValidator_ValidateArrayPartial(t *testing.T) {
+	spec := schema.ResponseSpec{
+		StatusCode: 200,
+		Body:       []interface{}{1, 2}, // Only validate first 2 elements
+	}
+
+	validator := NewValidator("test", spec, &Config{Variables: map[string]interface{}{}})
+
+	body := []interface{}{1, 2, 3, 4, 5} // Array is longer, but that's OK
+
+	resp := createMockResponse(200, map[string]string{"Content-Type": "application/json"}, body)
+
+	_, err := validator.Verify(resp)
+
+	assert.NoError(t, err, "Partial array validation should pass (like tavern-py)")
+}

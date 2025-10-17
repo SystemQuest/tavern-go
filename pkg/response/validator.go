@@ -68,14 +68,14 @@ func (v *Validator) Verify(resp *http.Response) (map[string]interface{}, error) 
 	}
 	resp.Body.Close()
 
-	// Try to parse as JSON
-	var bodyJSON map[string]interface{}
+	// Try to parse as JSON (support both objects and arrays)
+	var bodyData interface{}
 
 	if len(bodyBytes) > 0 {
-		err = json.Unmarshal(bodyBytes, &bodyJSON)
+		err = json.Unmarshal(bodyBytes, &bodyData)
 		if err != nil {
 			// Not JSON, keep as string
-			bodyJSON = nil
+			bodyData = nil
 		}
 	} // Check for custom validation function
 	if v.spec.Body != nil {
@@ -90,7 +90,7 @@ func (v *Validator) Verify(resp *http.Response) (map[string]interface{}, error) 
 
 	// Verify body
 	if v.spec.Body != nil {
-		v.validateBlock("body", bodyJSON, v.spec.Body)
+		v.validateBlock("body", bodyData, v.spec.Body)
 	}
 
 	// Verify headers
@@ -187,6 +187,12 @@ func (v *Validator) validateWithExt(extSpec interface{}, resp *http.Response) er
 
 // validateBlock validates a block (body or headers)
 func (v *Validator) validateBlock(blockName string, actual interface{}, expected interface{}) {
+	// Check if expected is an array (support list validation like tavern-py)
+	if expectedList, ok := expected.([]interface{}); ok {
+		v.validateList(blockName, actual, expectedList)
+		return
+	}
+
 	expectedMap, ok := expected.(map[string]interface{})
 	if !ok {
 		return
@@ -232,6 +238,44 @@ func (v *Validator) validateBlock(blockName string, actual interface{}, expected
 		if !compareValues(actualVal, expectedVal) {
 			v.addError(fmt.Sprintf("%s.%s: expected %v, got %v",
 				blockName, key, expectedVal, actualVal))
+		}
+	}
+}
+
+// validateList validates array responses (similar to tavern-py's yield_keyvals for lists)
+func (v *Validator) validateList(blockName string, actual interface{}, expected []interface{}) {
+	// Type check: actual must be an array
+	actualList, ok := actual.([]interface{})
+	if !ok {
+		v.addError(fmt.Sprintf("%s: expected array, got %T", blockName, actual))
+		return
+	}
+
+	// Validate each expected element (partial validation allowed, like tavern-py)
+	for idx, expectedVal := range expected {
+		if idx >= len(actualList) {
+			v.addError(fmt.Sprintf("%s[%d]: index out of range (array length: %d)",
+				blockName, idx, len(actualList)))
+			continue
+		}
+
+		actualVal := actualList[idx]
+		indexName := fmt.Sprintf("%s[%d]", blockName, idx)
+
+		// Handle nested structures recursively
+		switch exp := expectedVal.(type) {
+		case map[string]interface{}:
+			// Nested object: use validateBlock
+			v.validateBlock(indexName, actualVal, exp)
+		case []interface{}:
+			// Nested array: recursive call
+			v.validateList(indexName, actualVal, exp)
+		default:
+			// Primitive value: direct comparison
+			if !compareValues(actualVal, exp) {
+				v.addError(fmt.Sprintf("%s: expected %v, got %v",
+					indexName, exp, actualVal))
+			}
 		}
 	}
 }
