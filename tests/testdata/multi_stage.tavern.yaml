@@ -1,0 +1,26 @@
+test_name: "Multi-stage auth test"
+stages:
+  - name: "Login"
+    request:
+      url: "{base_url}/auth/login"
+      method: "POST"
+      json:
+        username: "testuser"
+        password: "testpass"
+    response:
+      status_code: 200
+      save:
+        body:
+          access_token: "token"
+  
+  - name: "Get user profile"
+    request:
+      url: "{base_url}/api/profile"
+      method: "GET"
+      headers:
+        Authorization: "Bearer {access_token}"
+    response:
+      status_code: 200
+      body:
+        username: "testuser"
+        authenticated: true
