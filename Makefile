@@ -4,11 +4,22 @@ BINARY_NAME=tavern
 BUILD_DIR=bin
 MAIN_PATH=./cmd/tavern
 
+# Version information
+VERSION := $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
+COMMIT := $(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
+BUILD_DATE := $(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+# Build flags
+LDFLAGS := -ldflags "\
+	-X github.com/systemquest/tavern-go/pkg/version.Version=$(VERSION) \
+	-X github.com/systemquest/tavern-go/pkg/version.GitCommit=$(COMMIT) \
+	-X github.com/systemquest/tavern-go/pkg/version.BuildDate=$(BUILD_DATE)"
+
 # Build the application
 build:
-	@echo "Building $(BINARY_NAME)..."
+	@echo "Building $(BINARY_NAME) $(VERSION)..."
 	@mkdir -p $(BUILD_DIR)
-	@go build -o $(BUILD_DIR)/$(BINARY_NAME) $(MAIN_PATH)
+	@go build $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME) $(MAIN_PATH)
 	@echo "Build complete: $(BUILD_DIR)/$(BINARY_NAME)"
 
 # Install to GOPATH/bin

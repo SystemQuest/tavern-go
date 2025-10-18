@@ -6,11 +6,10 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/systemquest/tavern-go/pkg/core"
+	"github.com/systemquest/tavern-go/pkg/version"
 )
 
 var (
-	version = "0.1.0"
-
 	// Flags
 	globalCfg string
 	verbose   bool
@@ -37,7 +36,7 @@ It provides a simple, concise syntax for defining API tests with support for:
 - JSON Schema validation
 
 Visit https://systemquest.dev for more information.`,
-	Version: version,
+	Version: version.Version,
 	Args:    cobra.MinimumNArgs(1),
 	RunE:    runTests,
 }
