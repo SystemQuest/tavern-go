@@ -66,7 +66,7 @@ func (v *Validator) Verify(resp *http.Response) (map[string]interface{}, error) 
 		v.addError(fmt.Sprintf("failed to read response body: %v", err))
 		return nil, v.formatErrors()
 	}
-	resp.Body.Close()
+	_ = resp.Body.Close()
 
 	// Try to parse as JSON (support both objects and arrays)
 	var bodyData interface{}

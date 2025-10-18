@@ -53,7 +53,7 @@ func TestIntegration_MultiStageAuth(t *testing.T) {
 	handler.AddPathHandler("/auth/login", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
 			"token": authToken,
 			"user":  "testuser",
 		})
@@ -307,7 +307,7 @@ func TestIntegration_HeaderValidation(t *testing.T) {
 		w.Header().Set("X-Request-ID", "req-12345")
 		w.Header().Set("X-Rate-Limit", "100")
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
 			"status": "ok",
 		})
 	})
@@ -352,7 +352,7 @@ func TestIntegration_JSONPayload(t *testing.T) {
 		_ = json.NewDecoder(r.Body).Decode(&receivedPayload)
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
 			"id":      "new-123",
 			"created": true,
 		})
