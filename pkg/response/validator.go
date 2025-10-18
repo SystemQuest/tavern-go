@@ -236,8 +236,8 @@ func (v *Validator) validateBlock(blockName string, actual interface{}, expected
 
 		// Compare values with type conversion for numbers
 		if !compareValues(actualVal, expectedVal) {
-			v.addError(fmt.Sprintf("%s.%s: expected %v, got %v",
-				blockName, key, expectedVal, actualVal))
+			v.addError(fmt.Sprintf("%s.%s: expected '%v' (type: %T), got '%v' (type: %T)",
+				blockName, key, expectedVal, expectedVal, actualVal, actualVal))
 		}
 	}
 }
@@ -273,8 +273,8 @@ func (v *Validator) validateList(blockName string, actual interface{}, expected 
 		default:
 			// Primitive value: direct comparison
 			if !compareValues(actualVal, exp) {
-				v.addError(fmt.Sprintf("%s: expected %v, got %v",
-					indexName, exp, actualVal))
+				v.addError(fmt.Sprintf("%s: expected '%v' (type: %T), got '%v' (type: %T)",
+					indexName, exp, exp, actualVal, actualVal))
 			}
 		}
 	}
@@ -308,8 +308,8 @@ func (v *Validator) validateHeaders(actual http.Header, expected map[string]inte
 
 		expectedStr := fmt.Sprintf("%v", expectedVal)
 		if actualVal != expectedStr {
-			v.addError(fmt.Sprintf("header %s: expected %v, got %v",
-				key, expectedVal, actualVal))
+			v.addError(fmt.Sprintf("header %s: expected '%v' (type: %T), got '%v' (type: %T)",
+				key, expectedVal, expectedVal, actualVal, actualVal))
 		}
 	}
 }
