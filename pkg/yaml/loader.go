@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/sirupsen/logrus"
 	"github.com/systemquest/tavern-go/pkg/schema"
 	goyaml "gopkg.in/yaml.v3"
 )
@@ -16,6 +17,7 @@ import (
 type Loader struct {
 	baseDir string
 	cache   map[string]interface{}
+	logger  *logrus.Logger
 }
 
 // NewLoader creates a new YAML loader
@@ -23,6 +25,7 @@ func NewLoader(baseDir string) *Loader {
 	return &Loader{
 		baseDir: baseDir,
 		cache:   make(map[string]interface{}),
+		logger:  logrus.New(),
 	}
 }
 
@@ -47,7 +50,7 @@ func (l *Loader) Load(filename string) ([]*schema.TestSpec, error) {
 	}
 
 	// Parse YAML documents
-	tests, err := l.parseYAML(processed)
+	tests, err := l.parseYAML(processed, absPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse YAML: %w", err)
 	}
@@ -138,7 +141,7 @@ func (l *Loader) indentYAML(content string, spaces int) string {
 }
 
 // parseYAML parses YAML content into test specifications
-func (l *Loader) parseYAML(data string) ([]*schema.TestSpec, error) {
+func (l *Loader) parseYAML(data string, filename string) ([]*schema.TestSpec, error) {
 	var tests []*schema.TestSpec
 
 	decoder := goyaml.NewDecoder(strings.NewReader(data))
@@ -157,6 +160,7 @@ func (l *Loader) parseYAML(data string) ([]*schema.TestSpec, error) {
 
 		// Skip empty documents
 		if test.TestName == "" {
+			l.logger.Warnf("Empty document in input file '%s'", filename)
 			continue
 		}
 
