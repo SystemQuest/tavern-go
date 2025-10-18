@@ -32,6 +32,7 @@ type RequestSpec struct {
 	Auth    *AuthSpec         `yaml:"auth,omitempty" json:"auth,omitempty"`
 	Files   map[string]string `yaml:"files,omitempty" json:"files,omitempty"`
 	Cookies map[string]string `yaml:"cookies,omitempty" json:"cookies,omitempty"`
+	Verify  *bool             `yaml:"verify,omitempty" json:"verify,omitempty"` // SSL certificate verification, defaults to true
 }
 
 // AuthSpec represents authentication configuration

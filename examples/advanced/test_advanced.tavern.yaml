@@ -114,3 +114,38 @@ stages:
         Authorization: "bearer {test_login_token}"
     response:
       status_code: 404
+
+---
+# Test 4: SSL certificate verification
+test_name: Test SSL certificate verification with verify keyword
+
+stages:
+  # Test with verify explicitly set to true (default behavior)
+  - name: Login with verify true
+    request:
+      url: http://localhost:5000/login
+      method: POST
+      verify: true
+      json:
+        user: test-user
+        password: correct-password
+    response:
+      status_code: 200
+      save:
+        body:
+          verify_test_token: token
+
+  # Test with verify set to false (skip SSL verification)
+  # Note: verify: false is useful in development/testing with self-signed certs
+  # Never use in production!
+  - name: Login with verify false
+    request:
+      url: http://localhost:5000/login
+      method: POST
+      verify: false
+      json:
+        user: test-user
+        password: correct-password
+    response:
+      status_code: 200
+

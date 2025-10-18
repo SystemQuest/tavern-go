@@ -2,6 +2,7 @@ package request
 
 import (
 	"bytes"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -62,8 +63,21 @@ func (c *Client) Execute(spec schema.RequestSpec) (*http.Response, error) {
 		return nil, fmt.Errorf("failed to build request: %w", err)
 	}
 
+	// Configure HTTP client based on verify setting
+	client := c.httpClient
+	if formattedSpec.Verify != nil && !*formattedSpec.Verify {
+		// Create a client with TLS verification disabled
+		client = &http.Client{
+			Timeout:       c.httpClient.Timeout,
+			CheckRedirect: c.httpClient.CheckRedirect,
+			Transport: &http.Transport{
+				TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+			},
+		}
+	}
+
 	// Execute the request
-	resp, err := c.httpClient.Do(req)
+	resp, err := client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("request failed: %w", err)
 	}

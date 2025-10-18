@@ -141,7 +141,7 @@ func TestRunner_InvalidHeaders(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/x-www-form-urlencoded")
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
 			"key": "value",
 		})
 	}))
@@ -188,12 +188,12 @@ func TestRunner_MultiStage(t *testing.T) {
 
 		if callCount == 1 {
 			// First stage response
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"token": "abc123",
 			})
 		} else {
 			// Second stage response
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"result": "success",
 			})
 		}
@@ -253,13 +253,13 @@ func TestRunner_VariableFlow(t *testing.T) {
 
 		if r.URL.Path == "/auth" {
 			// First stage: return token
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"token": "secret-token-123",
 			})
 		} else {
 			// Second stage: verify token was sent
 			receivedToken = r.Header.Get("Authorization")
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"authenticated": true,
 			})
 		}
@@ -359,12 +359,12 @@ func TestRunner_IncludeFiles(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json")
 		if apiKey == "included-key-789" {
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"status": "authorized",
 			})
 		} else {
 			w.WriteHeader(http.StatusUnauthorized)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"error": "unauthorized",
 			})
 		}

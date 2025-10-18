@@ -75,6 +75,10 @@ const testSchema = `{
               },
               "cookies": {
                 "type": "object"
+              },
+              "verify": {
+                "type": "boolean",
+                "description": "Whether to verify SSL certificates (default: true)"
               }
             }
           },
