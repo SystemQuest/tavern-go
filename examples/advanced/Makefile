@@ -1,4 +1,4 @@
-.PHONY: deps server test clean db-init quick-test help all
+.PHONY: deps server test clean db-init quick-test help all docker-build docker-up docker-down docker-test docker-logs
 
 # Default target
 all: help
@@ -25,12 +25,12 @@ server: deps
 # Run tavern tests
 test:
 	@echo "🧪 Running Tavern tests..."
-	@../../tavern-go test_advanced.tavern.yaml
+	@../../bin/tavern test_advanced.tavern.yaml
 
 # Run tests with verbose output
 test-verbose:
 	@echo "🧪 Running Tavern tests (verbose)..."
-	@../../tavern-go -v test_advanced.tavern.yaml
+	@../../bin/tavern -v test_advanced.tavern.yaml
 
 # Clean up generated files
 clean:
@@ -61,7 +61,7 @@ quick-test: deps
 	@go run server.go jwt_validator.go > /dev/null 2>&1 & echo $$! > .server.pid
 	@sleep 3
 	@echo "Running tests..."
-	@../../tavern-go test_advanced.tavern.yaml || (kill `cat .server.pid` 2>/dev/null && rm -f .server.pid && false)
+	@../../bin/tavern test_advanced.tavern.yaml || (kill `cat .server.pid` 2>/dev/null && rm -f .server.pid && false)
 	@echo "Stopping server..."
 	@kill `cat .server.pid` 2>/dev/null || true
 	@rm -f .server.pid
@@ -76,6 +76,36 @@ test-login:
 		| python3 -m json.tool || cat
 	@echo ""
 
+# Docker commands
+docker-build:
+	@echo "🐳 Building Docker image..."
+	@docker compose build
+	@echo "✅ Docker image built"
+
+docker-up:
+	@echo "🐳 Starting server with Docker Compose..."
+	@docker compose up -d
+	@echo "⏳ Waiting for server to be healthy..."
+	@sleep 5
+	@docker compose ps
+	@echo "✅ Server is running at http://localhost:5000"
+
+docker-down:
+	@echo "🐳 Stopping Docker containers..."
+	@docker compose down
+	@echo "✅ Containers stopped"
+
+docker-logs:
+	@echo "📋 Docker container logs:"
+	@docker compose logs -f
+
+docker-test: docker-build docker-up
+	@echo "🧪 Running Tavern tests against Docker container..."
+	@sleep 3
+	@../../bin/tavern test_advanced.tavern.yaml || (make docker-down && false)
+	@make docker-down
+	@echo "✅ Docker test complete"
+
 # Show help
 help:
 	@echo "📖 Available commands:"
@@ -89,6 +119,13 @@ help:
 	@echo "  make quick-test   - Auto start server, test, and stop"
 	@echo "  make test-login   - Test login endpoint manually"
 	@echo "  make clean        - Clean up temporary files"
+	@echo ""
+	@echo "🐳 Docker commands:"
+	@echo "  make docker-build - Build Docker image"
+	@echo "  make docker-up    - Start server in Docker"
+	@echo "  make docker-down  - Stop Docker containers"
+	@echo "  make docker-logs  - View Docker container logs"
+	@echo "  make docker-test  - Build, start, test, and stop (automated)"
 	@echo "  make help         - Show this help message"
 	@echo ""
 	@echo "💡 Typical workflow:"

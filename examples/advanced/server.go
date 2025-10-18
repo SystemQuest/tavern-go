@@ -277,6 +277,12 @@ func doubleHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(NumberResponse{Number: doubled})
 }
 
+// Ping handler - health check endpoint
+func pingHandler(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("pong"))
+}
+
 // Reset handler - clear all numbers from database
 func resetHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
@@ -309,6 +315,7 @@ func main() {
 	log.Println("Database initialized")
 
 	// Register handlers
+	http.HandleFunc("/ping", pingHandler)
 	http.HandleFunc("/login", loginHandler)
 	http.HandleFunc("/numbers", authMiddleware(numbersHandler))
 	http.HandleFunc("/double", authMiddleware(doubleHandler))
@@ -318,6 +325,7 @@ func main() {
 	port := ":5000"
 	log.Printf("Server starting on http://localhost%s", port)
 	log.Println("Endpoints:")
+	log.Println("  GET  /ping               - Health check")
 	log.Println("  POST /login              - Get JWT token")
 	log.Println("  GET  /numbers?name=...   - Get number (requires auth)")
 	log.Println("  POST /numbers            - Store number (requires auth)")
