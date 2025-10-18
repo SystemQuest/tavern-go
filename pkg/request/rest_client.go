@@ -24,8 +24,9 @@ type RestClient struct {
 
 // Config holds request configuration
 type Config struct {
-	Variables map[string]interface{}
-	Timeout   time.Duration
+	Variables  map[string]interface{}
+	Timeout    time.Duration
+	HTTPClient *http.Client // Optional: shared HTTP client for session persistence
 }
 
 // NewRestClient creates a new REST API client
@@ -37,15 +38,24 @@ func NewRestClient(config *Config) *RestClient {
 		}
 	}
 
-	return &RestClient{
-		httpClient: &http.Client{
+	var client *http.Client
+	if config.HTTPClient != nil {
+		// Use provided client (for session persistence)
+		client = config.HTTPClient
+	} else {
+		// Create new client
+		client = &http.Client{
 			Timeout: config.Timeout,
 			CheckRedirect: func(req *http.Request, via []*http.Request) error {
 				// Don't follow redirects automatically
 				return http.ErrUseLastResponse
 			},
-		},
-		config: config,
+		}
+	}
+
+	return &RestClient{
+		httpClient: client,
+		config:     config,
 	}
 }
 

@@ -108,6 +108,22 @@ func (v *RestValidator) Verify(resp *http.Response) (map[string]interface{}, err
 		v.validateHeaders(resp.Header, v.spec.Headers)
 	}
 
+	// Verify cookies (aligned with tavern-py)
+	if len(v.spec.Cookies) > 0 {
+		for _, cookieName := range v.spec.Cookies {
+			found := false
+			for _, cookie := range resp.Cookies() {
+				if cookie.Name == cookieName {
+					found = true
+					break
+				}
+			}
+			if !found {
+				v.addError(fmt.Sprintf("No cookie named '%s' in response", cookieName))
+			}
+		}
+	}
+
 	// Save values
 	if v.spec.Save != nil {
 		// Save from body

@@ -2,6 +2,9 @@ package core
 
 import (
 	"fmt"
+	"net/http"
+	"net/http/cookiejar"
+	"time"
 
 	"github.com/sirupsen/logrus"
 	"github.com/systemquest/tavern-go/pkg/request"
@@ -114,9 +117,29 @@ func (r *Runner) RunFile(filename string) error {
 func (r *Runner) RunTest(test *schema.TestSpec) error {
 	r.logger.Infof("Running test: %s", test.TestName)
 
+	// Create shared HTTP client for session persistence (aligned with tavern-py's requests.Session)
+	// This enables:
+	// - Cookie persistence across stages
+	// - Connection reuse (HTTP keep-alive)
+	// - Session-based authentication
+	jar, err := cookiejar.New(nil)
+	if err != nil {
+		return fmt.Errorf("failed to create cookie jar: %w", err)
+	}
+
+	sharedHTTPClient := &http.Client{
+		Timeout: 30 * time.Second,
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			// Don't follow redirects automatically (aligned with tavern-py)
+			return http.ErrUseLastResponse
+		},
+		Jar: jar, // Enable automatic cookie management
+	}
+
 	// Initialize test configuration
 	testConfig := &request.Config{
-		Variables: make(map[string]interface{}),
+		Variables:  make(map[string]interface{}),
+		HTTPClient: sharedHTTPClient, // Share HTTP client across all stages
 	}
 
 	// Merge global variables

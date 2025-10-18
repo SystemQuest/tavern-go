@@ -24,6 +24,9 @@ jobs:
   integration-test:
     name: Integration Test (Docker)
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        example: [advanced, cookies]
     
     steps:
       - uses: actions/checkout@v4
@@ -36,10 +39,13 @@ jobs:
       - name: Build tavern binary
         run: make build
       
-      - name: Run Docker integration tests
+      - name: Run Docker integration tests - ${{ matrix.example }}
         run: |
-          cd examples/advanced
+          cd examples/${{ matrix.example }}
+          make docker-build
+          make docker-up
           make docker-test
+          make docker-down
 
   lint:
     name: Lint

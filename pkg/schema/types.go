@@ -64,6 +64,7 @@ type ResponseSpec struct {
 	StatusCode int                    `yaml:"status_code,omitempty" json:"status_code,omitempty"`
 	Headers    map[string]interface{} `yaml:"headers,omitempty" json:"headers,omitempty"`
 	Body       interface{}            `yaml:"body,omitempty" json:"body,omitempty"`
+	Cookies    []string               `yaml:"cookies,omitempty" json:"cookies,omitempty"` // Expected cookie names
 	Save       *SaveSpec              `yaml:"save,omitempty" json:"save,omitempty"`
 }
 

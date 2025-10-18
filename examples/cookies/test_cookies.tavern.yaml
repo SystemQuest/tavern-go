@@ -1,0 +1,42 @@
+# Cookie-based Authentication Test
+# Tests session persistence and cookie validation (aligned with tavern-py commit 9d4ffe0)
+
+test_name: Test cookie-based authentication flow
+
+stages:
+  - name: Login and get session cookie
+    request:
+      url: http://localhost:5555/login
+      method: POST
+      json:
+        username: testuser
+        password: testpass
+    response:
+      status_code: 200
+      cookies:
+        - session_id      # Verify session cookie is set
+        - user_pref       # Verify preference cookie is set
+      body:
+        message: Login successful
+        username: testuser
+
+  - name: Access protected resource with session
+    request:
+      url: http://localhost:5555/api/protected
+      method: GET
+      # No need to manually set cookies - automatically carried from previous request
+    response:
+      status_code: 200
+      body:
+        message: Access granted
+        user: testuser
+        data: secret information
+
+  - name: Logout
+    request:
+      url: http://localhost:5555/logout
+      method: POST
+    response:
+      status_code: 200
+      body:
+        message: Logged out
