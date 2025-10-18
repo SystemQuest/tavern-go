@@ -22,7 +22,7 @@ const testSchema = `{
       "description": "Include blocks with variables",
       "items": {
         "type": "object",
-        "required": ["name"],
+        "required": ["name", "description"],
         "properties": {
           "name": {
             "type": "string"
@@ -92,6 +92,14 @@ const testSchema = `{
                 "type": "object"
               },
               "body": {},
+              "cookies": {
+                "type": "array",
+                "description": "Expected cookie names to verify in response",
+                "uniqueItems": true,
+                "items": {
+                  "type": "string"
+                }
+              },
               "save": {
                 "type": "object",
                 "properties": {
@@ -150,6 +158,15 @@ func (v *Validator) Validate(test *TestSpec) error {
 			errorMsg += fmt.Sprintf("  - %s: %s\n", err.Field(), err.Description())
 		}
 		return fmt.Errorf("%s", errorMsg)
+	}
+
+	// Custom validation: Check stage name uniqueness
+	stageNames := make(map[string]bool)
+	for i, stage := range test.Stages {
+		if stageNames[stage.Name] {
+			return fmt.Errorf("validation failed:\n  - stages[%d].name: stage name '%s' must be unique", i, stage.Name)
+		}
+		stageNames[stage.Name] = true
 	}
 
 	return nil
