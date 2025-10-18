@@ -1,6 +1,7 @@
 package response
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -8,6 +9,7 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/sirupsen/logrus"
 	"github.com/systemquest/tavern-go/pkg/extension"
 	"github.com/systemquest/tavern-go/pkg/schema"
 	"github.com/systemquest/tavern-go/pkg/util"
@@ -20,6 +22,7 @@ type RestValidator struct {
 	config   *Config
 	response *http.Response
 	errors   []string
+	logger   *logrus.Logger
 }
 
 // Config holds validator configuration
@@ -40,6 +43,7 @@ func NewRestValidator(name string, spec schema.ResponseSpec, config *Config) *Re
 		spec:   spec,
 		config: config,
 		errors: make([]string, 0),
+		logger: logrus.New(),
 	}
 }
 
@@ -47,6 +51,20 @@ func NewRestValidator(name string, spec schema.ResponseSpec, config *Config) *Re
 func (v *RestValidator) Verify(resp *http.Response) (map[string]interface{}, error) {
 	v.response = resp
 	saved := make(map[string]interface{})
+
+	// Read response body first for logging
+	bodyBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		v.addError(fmt.Sprintf("failed to read response body: %v", err))
+		return nil, v.formatErrors()
+	}
+	_ = resp.Body.Close()
+
+	// Log response (aligned with tavern-py)
+	v.logger.Infof("Response: '%s' (%s)", resp.Status, string(bodyBytes))
+
+	// Restore body for further processing
+	resp.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
 
 	// Default expected status code to 200
 	expectedStatus := v.spec.StatusCode
@@ -59,14 +77,6 @@ func (v *RestValidator) Verify(resp *http.Response) (map[string]interface{}, err
 		v.addError(fmt.Sprintf("status code mismatch: expected %d, got %d",
 			expectedStatus, resp.StatusCode))
 	}
-
-	// Read response body
-	bodyBytes, err := io.ReadAll(resp.Body)
-	if err != nil {
-		v.addError(fmt.Sprintf("failed to read response body: %v", err))
-		return nil, v.formatErrors()
-	}
-	_ = resp.Body.Close()
 
 	// Try to parse as JSON (support both objects and arrays)
 	var bodyData interface{}
