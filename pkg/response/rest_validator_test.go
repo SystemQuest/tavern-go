@@ -46,7 +46,7 @@ func TestValidator_SaveBodySimple(t *testing.T) {
 		},
 	}
 
-	validator := NewValidator("test", spec, &Config{Variables: map[string]interface{}{}})
+	validator := NewRestValidator("test", spec, &Config{Variables: map[string]interface{}{}})
 
 	body := map[string]interface{}{
 		"code": "abc123",
@@ -72,7 +72,7 @@ func TestValidator_SaveBodyNested(t *testing.T) {
 		},
 	}
 
-	validator := NewValidator("test", spec, &Config{Variables: map[string]interface{}{}})
+	validator := NewRestValidator("test", spec, &Config{Variables: map[string]interface{}{}})
 
 	body := map[string]interface{}{
 		"user": map[string]interface{}{
@@ -103,7 +103,7 @@ func TestValidator_SaveBodyArray(t *testing.T) {
 		},
 	}
 
-	validator := NewValidator("test", spec, &Config{Variables: map[string]interface{}{}})
+	validator := NewRestValidator("test", spec, &Config{Variables: map[string]interface{}{}})
 
 	body := map[string]interface{}{
 		"items": []interface{}{
@@ -133,7 +133,7 @@ func TestValidator_SaveBodyFromArray(t *testing.T) {
 		},
 	}
 
-	validator := NewValidator("test", spec, &Config{Variables: map[string]interface{}{}})
+	validator := NewRestValidator("test", spec, &Config{Variables: map[string]interface{}{}})
 
 	// Response body is an array, not an object
 	body := []interface{}{
@@ -161,7 +161,7 @@ func TestValidator_SaveHeader(t *testing.T) {
 		},
 	}
 
-	validator := NewValidator("test", spec, &Config{Variables: map[string]interface{}{}})
+	validator := NewRestValidator("test", spec, &Config{Variables: map[string]interface{}{}})
 
 	headers := map[string]string{
 		"Location":     "https://example.com/next",
@@ -188,7 +188,7 @@ func TestValidator_SaveRedirectQueryParam(t *testing.T) {
 		},
 	}
 
-	validator := NewValidator("test", spec, &Config{Variables: map[string]interface{}{}})
+	validator := NewRestValidator("test", spec, &Config{Variables: map[string]interface{}{}})
 
 	headers := map[string]string{
 		"Location": "https://example.com?search=breadsticks&page=2",
@@ -214,7 +214,7 @@ func TestValidator_SaveNonExistentKey(t *testing.T) {
 		},
 	}
 
-	validator := NewValidator("test", spec, &Config{Variables: map[string]interface{}{}})
+	validator := NewRestValidator("test", spec, &Config{Variables: map[string]interface{}{}})
 
 	body := map[string]interface{}{
 		"other": "data",
@@ -240,7 +240,7 @@ func TestValidator_ValidateBodySimple(t *testing.T) {
 		},
 	}
 
-	validator := NewValidator("test", spec, &Config{Variables: map[string]interface{}{}})
+	validator := NewRestValidator("test", spec, &Config{Variables: map[string]interface{}{}})
 
 	body := map[string]interface{}{
 		"key":    "value",
@@ -264,7 +264,7 @@ func TestValidator_ValidateBodyList(t *testing.T) {
 		// Body:       []interface{}{"a", 1, "b"},
 	}
 
-	validator := NewValidator("test", spec, &Config{Variables: map[string]interface{}{}})
+	validator := NewRestValidator("test", spec, &Config{Variables: map[string]interface{}{}})
 
 	body := []interface{}{"a", 1, "b"}
 
@@ -286,7 +286,7 @@ func TestValidator_ValidateListInBody(t *testing.T) {
 		},
 	}
 
-	validator := NewValidator("test", spec, &Config{Variables: map[string]interface{}{}})
+	validator := NewRestValidator("test", spec, &Config{Variables: map[string]interface{}{}})
 
 	body := map[string]interface{}{
 		"items": []interface{}{"a", "b", "c"},
@@ -310,7 +310,7 @@ func TestValidator_ValidateNestedBody(t *testing.T) {
 		},
 	}
 
-	validator := NewValidator("test", spec, &Config{Variables: map[string]interface{}{}})
+	validator := NewRestValidator("test", spec, &Config{Variables: map[string]interface{}{}})
 
 	body := map[string]interface{}{
 		"user": map[string]interface{}{
@@ -339,7 +339,7 @@ func TestValidator_ValidateHeaders(t *testing.T) {
 		},
 	}
 
-	validator := NewValidator("test", spec, &Config{Variables: map[string]interface{}{}})
+	validator := NewRestValidator("test", spec, &Config{Variables: map[string]interface{}{}})
 
 	headers := map[string]string{
 		"Content-Type": "application/json",
@@ -360,7 +360,7 @@ func TestValidator_ValidateStatusCode(t *testing.T) {
 		StatusCode: 200,
 	}
 
-	validator := NewValidator("test", spec, &Config{Variables: map[string]interface{}{}})
+	validator := NewRestValidator("test", spec, &Config{Variables: map[string]interface{}{}})
 
 	resp := createMockResponse(200, nil, nil)
 
@@ -375,7 +375,7 @@ func TestValidator_IncorrectStatusCode(t *testing.T) {
 		StatusCode: 200,
 	}
 
-	validator := NewValidator("test", spec, &Config{Variables: map[string]interface{}{}})
+	validator := NewRestValidator("test", spec, &Config{Variables: map[string]interface{}{}})
 
 	resp := createMockResponse(400, nil, nil)
 
@@ -402,7 +402,7 @@ func TestValidator_ValidateAndSave(t *testing.T) {
 		},
 	}
 
-	validator := NewValidator("test", spec, &Config{Variables: map[string]interface{}{}})
+	validator := NewRestValidator("test", spec, &Config{Variables: map[string]interface{}{}})
 
 	body := map[string]interface{}{
 		"status": "success",
@@ -429,7 +429,7 @@ func TestValidator_NumberComparison(t *testing.T) {
 		},
 	}
 
-	validator := NewValidator("test", spec, &Config{Variables: map[string]interface{}{}})
+	validator := NewRestValidator("test", spec, &Config{Variables: map[string]interface{}{}})
 
 	// JSON unmarshals all numbers as float64
 	body := map[string]interface{}{
@@ -454,7 +454,7 @@ func TestValidator_InvalidBodyValue(t *testing.T) {
 		},
 	}
 
-	validator := NewValidator("test", spec, &Config{Variables: map[string]interface{}{}})
+	validator := NewRestValidator("test", spec, &Config{Variables: map[string]interface{}{}})
 
 	body := map[string]interface{}{
 		"key": "wrong",
@@ -479,7 +479,7 @@ func TestValidator_InvalidHeaderValue(t *testing.T) {
 		},
 	}
 
-	validator := NewValidator("test", spec, &Config{Variables: map[string]interface{}{}})
+	validator := NewRestValidator("test", spec, &Config{Variables: map[string]interface{}{}})
 
 	headers := map[string]string{
 		"Content-Type": "text/html", // Wrong value
@@ -502,7 +502,7 @@ func TestValidator_MissingRequiredHeader(t *testing.T) {
 		},
 	}
 
-	validator := NewValidator("test", spec, &Config{Variables: map[string]interface{}{}})
+	validator := NewRestValidator("test", spec, &Config{Variables: map[string]interface{}{}})
 
 	headers := map[string]string{
 		"Content-Type": "application/json",
@@ -532,7 +532,7 @@ func TestValidator_VariableSubstitutionInExpected(t *testing.T) {
 		},
 	}
 
-	validator := NewValidator("test", spec, &Config{Variables: variables})
+	validator := NewRestValidator("test", spec, &Config{Variables: variables})
 
 	body := map[string]interface{}{
 		"name": "John",
@@ -556,7 +556,7 @@ func TestValidator_ValidateArrayResponse(t *testing.T) {
 		},
 	}
 
-	validator := NewValidator("test", spec, &Config{Variables: map[string]interface{}{}})
+	validator := NewRestValidator("test", spec, &Config{Variables: map[string]interface{}{}})
 
 	body := []interface{}{
 		map[string]interface{}{"id": 1, "name": "Alice", "extra": "field"},
@@ -577,7 +577,7 @@ func TestValidator_ValidateArrayPrimitives(t *testing.T) {
 		Body:       []interface{}{1, "text", 3.14},
 	}
 
-	validator := NewValidator("test", spec, &Config{Variables: map[string]interface{}{}})
+	validator := NewRestValidator("test", spec, &Config{Variables: map[string]interface{}{}})
 
 	body := []interface{}{1, "text", 3.14, "extra"}
 
@@ -598,7 +598,7 @@ func TestValidator_ValidateNestedArray(t *testing.T) {
 		},
 	}
 
-	validator := NewValidator("test", spec, &Config{Variables: map[string]interface{}{}})
+	validator := NewRestValidator("test", spec, &Config{Variables: map[string]interface{}{}})
 
 	body := []interface{}{
 		[]interface{}{1, 2, 3},
@@ -619,7 +619,7 @@ func TestValidator_ValidateArrayTypeMismatch(t *testing.T) {
 		Body:       []interface{}{1, 2, 3},
 	}
 
-	validator := NewValidator("test", spec, &Config{Variables: map[string]interface{}{}})
+	validator := NewRestValidator("test", spec, &Config{Variables: map[string]interface{}{}})
 
 	body := map[string]interface{}{"key": "value"}
 
@@ -638,7 +638,7 @@ func TestValidator_ValidateArrayValueMismatch(t *testing.T) {
 		Body:       []interface{}{1, 2, 3},
 	}
 
-	validator := NewValidator("test", spec, &Config{Variables: map[string]interface{}{}})
+	validator := NewRestValidator("test", spec, &Config{Variables: map[string]interface{}{}})
 
 	body := []interface{}{1, 999, 3} // Middle value different
 
@@ -657,7 +657,7 @@ func TestValidator_ValidateArrayPartial(t *testing.T) {
 		Body:       []interface{}{1, 2}, // Only validate first 2 elements
 	}
 
-	validator := NewValidator("test", spec, &Config{Variables: map[string]interface{}{}})
+	validator := NewRestValidator("test", spec, &Config{Variables: map[string]interface{}{}})
 
 	body := []interface{}{1, 2, 3, 4, 5} // Array is longer, but that's OK
 

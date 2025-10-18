@@ -16,8 +16,8 @@ import (
 	"github.com/systemquest/tavern-go/pkg/util"
 )
 
-// Client handles HTTP requests
-type Client struct {
+// RestClient handles REST API requests
+type RestClient struct {
 	httpClient *http.Client
 	config     *Config
 }
@@ -28,8 +28,8 @@ type Config struct {
 	Timeout   time.Duration
 }
 
-// NewClient creates a new HTTP client
-func NewClient(config *Config) *Client {
+// NewRestClient creates a new REST API client
+func NewRestClient(config *Config) *RestClient {
 	if config == nil {
 		config = &Config{
 			Variables: make(map[string]interface{}),
@@ -37,7 +37,7 @@ func NewClient(config *Config) *Client {
 		}
 	}
 
-	return &Client{
+	return &RestClient{
 		httpClient: &http.Client{
 			Timeout: config.Timeout,
 			CheckRedirect: func(req *http.Request, via []*http.Request) error {
@@ -50,7 +50,7 @@ func NewClient(config *Config) *Client {
 }
 
 // Execute executes an HTTP request
-func (c *Client) Execute(spec schema.RequestSpec) (*http.Response, error) {
+func (c *RestClient) Execute(spec schema.RequestSpec) (*http.Response, error) {
 	// Format the request spec with variables
 	formattedSpec, err := c.formatRequestSpec(spec)
 	if err != nil {
@@ -86,7 +86,7 @@ func (c *Client) Execute(spec schema.RequestSpec) (*http.Response, error) {
 }
 
 // formatRequestSpec formats the request spec with variables
-func (c *Client) formatRequestSpec(spec schema.RequestSpec) (schema.RequestSpec, error) {
+func (c *RestClient) formatRequestSpec(spec schema.RequestSpec) (schema.RequestSpec, error) {
 	formatted := spec
 
 	// Format URL
@@ -150,7 +150,7 @@ func (c *Client) formatRequestSpec(spec schema.RequestSpec) (schema.RequestSpec,
 }
 
 // generateFromExt generates data using an extension function
-func (c *Client) generateFromExt(extSpec interface{}) (interface{}, error) {
+func (c *RestClient) generateFromExt(extSpec interface{}) (interface{}, error) {
 	extMap, ok := extSpec.(map[string]interface{})
 	if !ok {
 		return nil, fmt.Errorf("$ext must be a map")
@@ -170,7 +170,7 @@ func (c *Client) generateFromExt(extSpec interface{}) (interface{}, error) {
 }
 
 // buildRequest builds an HTTP request
-func (c *Client) buildRequest(spec schema.RequestSpec) (*http.Request, error) {
+func (c *RestClient) buildRequest(spec schema.RequestSpec) (*http.Request, error) {
 	// Default method to GET
 	method := spec.Method
 	if method == "" {
@@ -276,7 +276,7 @@ func (c *Client) buildRequest(spec schema.RequestSpec) (*http.Request, error) {
 }
 
 // setAuth sets authentication on the request
-func (c *Client) setAuth(req *http.Request, auth *schema.AuthSpec) error {
+func (c *RestClient) setAuth(req *http.Request, auth *schema.AuthSpec) error {
 	switch strings.ToLower(auth.Type) {
 	case "basic":
 		if auth.Username == "" || auth.Password == "" {

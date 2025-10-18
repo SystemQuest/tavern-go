@@ -15,14 +15,14 @@ Tavern-Go 是 Tavern Python 版本的 Go 语言完全重写实现，专为高性
    - 全局配置支持
 
 2. **HTTP 处理**
-   - 完整的 HTTP 客户端 (`pkg/request/client.go`)
+   - 完整的 REST API 客户端 (`pkg/request/rest_client.go`)
    - 支持所有 HTTP 方法
    - 请求模板化（变量替换）
    - 认证支持（Basic, Bearer）
    - Cookie 和查询参数
 
 3. **响应验证**
-   - 状态码验证 (`pkg/response/validator.go`)
+   - 状态码验证 (`pkg/response/rest_validator.go`)
    - 响应体验证（支持嵌套键访问）
    - Header 验证
    - 数据提取和保存

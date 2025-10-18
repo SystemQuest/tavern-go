@@ -14,7 +14,7 @@ import (
 )
 
 func TestClient_MissingVariable(t *testing.T) {
-	client := NewClient(&Config{
+	client := NewRestClient(&Config{
 		Variables: map[string]interface{}{
 			"url": "http://example.com",
 			// Missing "token" variable
@@ -36,7 +36,7 @@ func TestClient_MissingVariable(t *testing.T) {
 }
 
 func TestClient_GetWithBody(t *testing.T) {
-	client := NewClient(&Config{})
+	client := NewRestClient(&Config{})
 
 	spec := schema.RequestSpec{
 		URL:    "http://example.com",
@@ -61,7 +61,7 @@ func TestClient_DefaultMethod(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := NewClient(&Config{})
+	client := NewRestClient(&Config{})
 
 	spec := schema.RequestSpec{
 		URL: server.URL,
@@ -76,7 +76,7 @@ func TestClient_DefaultMethod(t *testing.T) {
 }
 
 func TestClient_DefaultMethodWithJSONBody(t *testing.T) {
-	client := NewClient(&Config{})
+	client := NewRestClient(&Config{})
 
 	spec := schema.RequestSpec{
 		URL: "http://example.com",
@@ -94,7 +94,7 @@ func TestClient_DefaultMethodWithJSONBody(t *testing.T) {
 }
 
 func TestClient_DefaultMethodWithDataBody(t *testing.T) {
-	client := NewClient(&Config{})
+	client := NewRestClient(&Config{})
 
 	spec := schema.RequestSpec{
 		URL: "http://example.com",
@@ -123,7 +123,7 @@ func TestClient_NoRedirects(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := NewClient(&Config{})
+	client := NewRestClient(&Config{})
 	resp, err := client.Execute(schema.RequestSpec{URL: server.URL, Method: "GET"})
 
 	require.NoError(t, err)
@@ -138,7 +138,7 @@ func TestClient_ContentTypeNotOverridden(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := NewClient(&Config{})
+	client := NewRestClient(&Config{})
 
 	spec := schema.RequestSpec{
 		URL:    server.URL,
@@ -162,7 +162,7 @@ func TestClient_ContentTypeCaseInsensitive(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := NewClient(&Config{})
+	client := NewRestClient(&Config{})
 
 	spec := schema.RequestSpec{
 		URL:    server.URL,
@@ -188,7 +188,7 @@ func TestClient_ExtensionFunction(t *testing.T) {
 		}
 	})
 
-	client := NewClient(&Config{})
+	client := NewRestClient(&Config{})
 
 	spec := schema.RequestSpec{
 		URL:    "http://example.com",
@@ -224,7 +224,7 @@ func TestClient_VariableSubstitution(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := NewClient(&Config{
+	client := NewRestClient(&Config{
 		Variables: map[string]interface{}{
 			"user_id":   "123",
 			"token":     "abc123",
@@ -260,7 +260,7 @@ func TestClient_QueryParameters(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := NewClient(&Config{})
+	client := NewRestClient(&Config{})
 
 	spec := schema.RequestSpec{
 		URL:    server.URL,
@@ -291,7 +291,7 @@ func TestClient_JSONBody(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := NewClient(&Config{})
+	client := NewRestClient(&Config{})
 
 	spec := schema.RequestSpec{
 		URL:    server.URL,
@@ -319,7 +319,7 @@ func TestClient_FormData(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := NewClient(&Config{})
+	client := NewRestClient(&Config{})
 
 	spec := schema.RequestSpec{
 		URL:    server.URL,
@@ -345,7 +345,7 @@ func TestClient_BasicAuth(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := NewClient(&Config{})
+	client := NewRestClient(&Config{})
 
 	spec := schema.RequestSpec{
 		URL:    server.URL,
@@ -369,7 +369,7 @@ func TestClient_BearerAuth(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := NewClient(&Config{})
+	client := NewRestClient(&Config{})
 
 	spec := schema.RequestSpec{
 		URL:    server.URL,
@@ -397,7 +397,7 @@ func TestClient_Cookies(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := NewClient(&Config{})
+	client := NewRestClient(&Config{})
 
 	spec := schema.RequestSpec{
 		URL:    server.URL,
@@ -419,7 +419,7 @@ func TestClient_VerifyTrue(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := NewClient(&Config{})
+	client := NewRestClient(&Config{})
 	verifyTrue := true
 
 	spec := schema.RequestSpec{
@@ -441,7 +441,7 @@ func TestClient_VerifyFalse(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := NewClient(&Config{})
+	client := NewRestClient(&Config{})
 	verifyFalse := false
 
 	spec := schema.RequestSpec{
@@ -462,7 +462,7 @@ func TestClient_VerifyDefault(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := NewClient(&Config{})
+	client := NewRestClient(&Config{})
 
 	spec := schema.RequestSpec{
 		URL:    server.URL,

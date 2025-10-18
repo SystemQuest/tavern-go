@@ -10,14 +10,14 @@ Tavern-Go is designed with a plugin architecture to support multiple protocols b
 pkg/
 ├── request/
 │   ├── base.go          # Base interfaces and common functionality
-│   ├── client.go        # HTTP/REST request executor
+│   ├── rest_client.go   # REST API request executor
 │   ├── shell_client.go  # Shell/CLI command executor
 │   └── config.go        # Request configuration
 └── response/
-    ├── base.go             # Base interfaces and common functionality
-    ├── validator.go        # HTTP/REST response verifier
-    ├── shell_validator.go  # Shell/CLI output verifier
-    └── config.go           # Response configuration
+    ├── base.go              # Base interfaces and common functionality
+    ├── rest_validator.go    # REST API response verifier
+    ├── shell_validator.go   # Shell/CLI output verifier
+    └── config.go            # Response configuration
 ```
 
 ## Design Principles
@@ -44,7 +44,7 @@ type Verifier interface {
 
 Each protocol has its own implementation:
 
-- **HTTP/REST**: `client.go` and `validator.go` (implemented ✅)
+- **REST API**: `rest_client.go` and `rest_validator.go` (implemented ✅)
 - **Shell/CLI**: `shell_client.go` and `shell_validator.go` (implemented ✅)
 - **TCP**: `tcp_client.go` and `tcp_validator.go` (future)
 - **RESP**: `resp_client.go` and `resp_validator.go` (future)
@@ -138,7 +138,7 @@ type RequestSpec struct {
 func (r *Runner) getExecutor(spec schema.RequestSpec) (request.Executor, error) {
     switch {
     case spec.URL != "":
-        return request.NewClient(config), nil
+        return request.NewRestClient(config), nil
     case spec.Host != "":
         return request.NewTCPClient(config), nil
     default:

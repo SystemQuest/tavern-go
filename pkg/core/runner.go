@@ -139,8 +139,8 @@ func (r *Runner) RunTest(test *schema.TestSpec) error {
 		}
 	}
 
-	// Create HTTP client
-	client := request.NewClient(testConfig)
+	// Create REST API client
+	client := request.NewRestClient(testConfig)
 
 	// Run each stage
 	for i, stage := range test.Stages {
@@ -160,7 +160,7 @@ func (r *Runner) RunTest(test *schema.TestSpec) error {
 		}
 
 		// Validate response
-		validator := response.NewValidator(stage.Name, stage.Response, validatorConfig)
+		validator := response.NewRestValidator(stage.Name, stage.Response, validatorConfig)
 		saved, err := validator.Verify(resp)
 		if err != nil {
 			return fmt.Errorf("stage '%s' validation failed: %w", stage.Name, err)

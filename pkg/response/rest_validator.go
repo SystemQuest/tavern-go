@@ -13,8 +13,8 @@ import (
 	"github.com/systemquest/tavern-go/pkg/util"
 )
 
-// Validator validates HTTP responses
-type Validator struct {
+// RestValidator validates REST API responses
+type RestValidator struct {
 	name     string
 	spec     schema.ResponseSpec
 	config   *Config
@@ -27,15 +27,15 @@ type Config struct {
 	Variables map[string]interface{}
 }
 
-// NewValidator creates a new response validator
-func NewValidator(name string, spec schema.ResponseSpec, config *Config) *Validator {
+// NewRestValidator creates a new REST API response validator
+func NewRestValidator(name string, spec schema.ResponseSpec, config *Config) *RestValidator {
 	if config == nil {
 		config = &Config{
 			Variables: make(map[string]interface{}),
 		}
 	}
 
-	return &Validator{
+	return &RestValidator{
 		name:   name,
 		spec:   spec,
 		config: config,
@@ -44,7 +44,7 @@ func NewValidator(name string, spec schema.ResponseSpec, config *Config) *Valida
 }
 
 // Verify verifies the response and returns saved variables
-func (v *Validator) Verify(resp *http.Response) (map[string]interface{}, error) {
+func (v *RestValidator) Verify(resp *http.Response) (map[string]interface{}, error) {
 	v.response = resp
 	saved := make(map[string]interface{})
 
@@ -166,7 +166,7 @@ func (v *Validator) Verify(resp *http.Response) (map[string]interface{}, error) 
 }
 
 // validateWithExt validates using a custom extension function
-func (v *Validator) validateWithExt(extSpec interface{}, resp *http.Response) error {
+func (v *RestValidator) validateWithExt(extSpec interface{}, resp *http.Response) error {
 	extMap, ok := extSpec.(map[string]interface{})
 	if !ok {
 		return fmt.Errorf("$ext must be a map")
@@ -186,7 +186,7 @@ func (v *Validator) validateWithExt(extSpec interface{}, resp *http.Response) er
 }
 
 // validateBlock validates a block (body or headers)
-func (v *Validator) validateBlock(blockName string, actual interface{}, expected interface{}) {
+func (v *RestValidator) validateBlock(blockName string, actual interface{}, expected interface{}) {
 	// Check if expected is an array (support list validation like tavern-py)
 	if expectedList, ok := expected.([]interface{}); ok {
 		v.validateList(blockName, actual, expectedList)
@@ -243,7 +243,7 @@ func (v *Validator) validateBlock(blockName string, actual interface{}, expected
 }
 
 // validateList validates array responses (similar to tavern-py's yield_keyvals for lists)
-func (v *Validator) validateList(blockName string, actual interface{}, expected []interface{}) {
+func (v *RestValidator) validateList(blockName string, actual interface{}, expected []interface{}) {
 	// Type check: actual must be an array
 	actualList, ok := actual.([]interface{})
 	if !ok {
@@ -281,7 +281,7 @@ func (v *Validator) validateList(blockName string, actual interface{}, expected 
 }
 
 // validateHeaders validates HTTP headers
-func (v *Validator) validateHeaders(actual http.Header, expected map[string]interface{}) {
+func (v *RestValidator) validateHeaders(actual http.Header, expected map[string]interface{}) {
 	// Format expected values
 	formattedExpected, err := util.FormatKeys(expected, v.config.Variables)
 	if err != nil {
@@ -315,16 +315,16 @@ func (v *Validator) validateHeaders(actual http.Header, expected map[string]inte
 }
 
 // extractValue extracts a value from data using dot notation
-func (v *Validator) extractValue(data interface{}, key string) (interface{}, error) {
+func (v *RestValidator) extractValue(data interface{}, key string) (interface{}, error) {
 	// Always use manual traversal for consistent behavior
 	return util.RecurseAccessKey(data, key)
 } // addError adds an error message
-func (v *Validator) addError(msg string) {
+func (v *RestValidator) addError(msg string) {
 	v.errors = append(v.errors, msg)
 }
 
 // formatErrors formats all errors into a single error
-func (v *Validator) formatErrors() error {
+func (v *RestValidator) formatErrors() error {
 	if len(v.errors) == 0 {
 		return nil
 	}
@@ -336,12 +336,12 @@ func (v *Validator) formatErrors() error {
 }
 
 // GetResponse returns the validated response
-func (v *Validator) GetResponse() *http.Response {
+func (v *RestValidator) GetResponse() *http.Response {
 	return v.response
 }
 
 // GetResponseBody returns the response body as string
-func (v *Validator) GetResponseBody() string {
+func (v *RestValidator) GetResponseBody() string {
 	if v.response == nil {
 		return ""
 	}
