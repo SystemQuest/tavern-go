@@ -31,11 +31,11 @@ func TestRunner_Success(t *testing.T) {
 		Stages: []schema.Stage{
 			{
 				Name: "step 1",
-				Request: schema.RequestSpec{
+				Request: &schema.RequestSpec{
 					URL:    server.URL,
 					Method: "GET",
 				},
-				Response: schema.ResponseSpec{
+				Response: &schema.ResponseSpec{
 					StatusCode: 200,
 					Body: map[string]interface{}{
 						"key": "value",
@@ -72,11 +72,11 @@ func TestRunner_InvalidStatusCode(t *testing.T) {
 		Stages: []schema.Stage{
 			{
 				Name: "step 1",
-				Request: schema.RequestSpec{
+				Request: &schema.RequestSpec{
 					URL:    server.URL,
 					Method: "GET",
 				},
-				Response: schema.ResponseSpec{
+				Response: &schema.ResponseSpec{
 					StatusCode: 200,
 				},
 			},
@@ -111,11 +111,11 @@ func TestRunner_InvalidBody(t *testing.T) {
 		Stages: []schema.Stage{
 			{
 				Name: "step 1",
-				Request: schema.RequestSpec{
+				Request: &schema.RequestSpec{
 					URL:    server.URL,
 					Method: "GET",
 				},
-				Response: schema.ResponseSpec{
+				Response: &schema.ResponseSpec{
 					StatusCode: 200,
 					Body: map[string]interface{}{
 						"key": "value",
@@ -153,11 +153,11 @@ func TestRunner_InvalidHeaders(t *testing.T) {
 		Stages: []schema.Stage{
 			{
 				Name: "step 1",
-				Request: schema.RequestSpec{
+				Request: &schema.RequestSpec{
 					URL:    server.URL,
 					Method: "GET",
 				},
-				Response: schema.ResponseSpec{
+				Response: &schema.ResponseSpec{
 					StatusCode: 200,
 					Headers: map[string]interface{}{
 						"content-type": "application/json",
@@ -206,11 +206,11 @@ func TestRunner_MultiStage(t *testing.T) {
 		Stages: []schema.Stage{
 			{
 				Name: "get token",
-				Request: schema.RequestSpec{
+				Request: &schema.RequestSpec{
 					URL:    server.URL + "/auth",
 					Method: "POST",
 				},
-				Response: schema.ResponseSpec{
+				Response: &schema.ResponseSpec{
 					StatusCode: 200,
 					Body: map[string]interface{}{
 						"token": "abc123",
@@ -219,11 +219,11 @@ func TestRunner_MultiStage(t *testing.T) {
 			},
 			{
 				Name: "use token",
-				Request: schema.RequestSpec{
+				Request: &schema.RequestSpec{
 					URL:    server.URL + "/api",
 					Method: "GET",
 				},
-				Response: schema.ResponseSpec{
+				Response: &schema.ResponseSpec{
 					StatusCode: 200,
 					Body: map[string]interface{}{
 						"result": "success",
@@ -272,11 +272,11 @@ func TestRunner_VariableFlow(t *testing.T) {
 		Stages: []schema.Stage{
 			{
 				Name: "get token",
-				Request: schema.RequestSpec{
+				Request: &schema.RequestSpec{
 					URL:    server.URL + "/auth",
 					Method: "POST",
 				},
-				Response: schema.ResponseSpec{
+				Response: &schema.ResponseSpec{
 					StatusCode: 200,
 					Save: &schema.SaveSpec{
 						Body: map[string]string{
@@ -287,14 +287,14 @@ func TestRunner_VariableFlow(t *testing.T) {
 			},
 			{
 				Name: "use token",
-				Request: schema.RequestSpec{
+				Request: &schema.RequestSpec{
 					URL:    server.URL + "/api",
 					Method: "GET",
 					Headers: map[string]string{
 						"Authorization": "Bearer {auth_token}",
 					},
 				},
-				Response: schema.ResponseSpec{
+				Response: &schema.ResponseSpec{
 					StatusCode: 200,
 					Body: map[string]interface{}{
 						"authenticated": true,
@@ -385,14 +385,14 @@ func TestRunner_IncludeFiles(t *testing.T) {
 		Stages: []schema.Stage{
 			{
 				Name: "test with included variable",
-				Request: schema.RequestSpec{
+				Request: &schema.RequestSpec{
 					URL:    server.URL,
 					Method: "GET",
 					Headers: map[string]string{
 						"X-API-Key": "{api_key}",
 					},
 				},
-				Response: schema.ResponseSpec{
+				Response: &schema.ResponseSpec{
 					StatusCode: 200,
 					Body: map[string]interface{}{
 						"status": "authorized",

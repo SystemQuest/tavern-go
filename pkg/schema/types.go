@@ -5,6 +5,10 @@ type TestSpec struct {
 	TestName string    `yaml:"test_name" json:"test_name"`
 	Includes []Include `yaml:"includes,omitempty" json:"includes,omitempty"`
 	Stages   []Stage   `yaml:"stages" json:"stages"`
+
+	// Future: Protocol-specific configurations at test level
+	// Following tavern-py's approach: if "mqtt" in test_spec, initialize MQTT client
+	// MQTT map[string]interface{} `yaml:"mqtt,omitempty" json:"mqtt,omitempty"`
 }
 
 // Include represents an include block with variables
@@ -15,10 +19,22 @@ type Include struct {
 }
 
 // Stage represents a single test stage
+// It uses a flexible structure to support multiple protocols
+// Similar to tavern-py's approach of checking keys like "request", "mqtt_publish", etc.
 type Stage struct {
-	Name     string       `yaml:"name" json:"name"`
-	Request  RequestSpec  `yaml:"request" json:"request"`
-	Response ResponseSpec `yaml:"response" json:"response"`
+	Name string `yaml:"name" json:"name"`
+
+	// REST/HTTP protocol fields
+	Request  *RequestSpec  `yaml:"request,omitempty" json:"request,omitempty"`
+	Response *ResponseSpec `yaml:"response,omitempty" json:"response,omitempty"`
+
+	// Future: MQTT protocol fields
+	// MQTTPublish  *MQTTPublishSpec  `yaml:"mqtt_publish,omitempty" json:"mqtt_publish,omitempty"`
+	// MQTTResponse *MQTTResponseSpec `yaml:"mqtt_response,omitempty" json:"mqtt_response,omitempty"`
+
+	// Future: Shell/CLI protocol fields
+	// Command        *ShellCommandSpec  `yaml:"command,omitempty" json:"command,omitempty"`
+	// CommandResponse *ShellResponseSpec `yaml:"command_response,omitempty" json:"command_response,omitempty"`
 }
 
 // RequestSpec represents an HTTP request specification

@@ -139,37 +139,46 @@ func (r *Runner) RunTest(test *schema.TestSpec) error {
 		}
 	}
 
-	// Create REST API client
-	client := request.NewRestClient(testConfig)
-
 	// Run each stage
 	for i, stage := range test.Stages {
 		r.logger.Infof("Running stage %d/%d: %s", i+1, len(test.Stages), stage.Name)
 
-		// Execute request
-		resp, err := client.Execute(stage.Request)
-		if err != nil {
-			return fmt.Errorf("stage '%s' request failed: %w", stage.Name, err)
-		}
+		// Protocol detection - check stage-level keys (aligned with tavern-py)
+		// tavern-py checks: if "request" in stage / elif "mqtt_publish" in stage
+		if stage.Request != nil {
+			// REST/HTTP protocol
+			if stage.Response == nil {
+				return fmt.Errorf("stage '%s': REST request requires response specification", stage.Name)
+			}
 
-		r.logger.Debugf("Response status: %d", resp.StatusCode)
+			executor := request.NewRestClient(testConfig)
+			resp, err := executor.Execute(*stage.Request)
+			if err != nil {
+				return fmt.Errorf("stage '%s' request failed: %w", stage.Name, err)
+			}
 
-		// Create validator config
-		validatorConfig := &response.Config{
-			Variables: testConfig.Variables,
-		}
+			validatorConfig := &response.Config{
+				Variables: testConfig.Variables,
+			}
+			validator := response.NewRestValidator(stage.Name, *stage.Response, validatorConfig)
+			saved, err := validator.Verify(resp)
+			if err != nil {
+				return fmt.Errorf("stage '%s' validation failed: %w", stage.Name, err)
+			}
 
-		// Validate response
-		validator := response.NewRestValidator(stage.Name, stage.Response, validatorConfig)
-		saved, err := validator.Verify(resp)
-		if err != nil {
-			return fmt.Errorf("stage '%s' validation failed: %w", stage.Name, err)
-		}
-
-		// Save variables for next stages
-		for k, v := range saved {
-			r.logger.Debugf("Saved variable: %s = %v", k, v)
-			testConfig.Variables[k] = v
+			// Save variables for next stages
+			for k, v := range saved {
+				r.logger.Debugf("Saved variable: %s = %v", k, v)
+				testConfig.Variables[k] = v
+			}
+		} else {
+			// Future protocols can be added here with elif-style checks:
+			// } else if stage.MQTTPublish != nil {
+			//     // MQTT protocol
+			// } else if stage.Command != nil {
+			//     // Shell/CLI protocol
+			// } else {
+			return fmt.Errorf("stage '%s': unable to detect protocol (no request field found)", stage.Name)
 		}
 
 		r.logger.Infof("Stage passed: %s", stage.Name)
