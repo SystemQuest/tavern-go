@@ -145,7 +145,7 @@ func (v *Validator) Validate(test *TestSpec) error {
 		for _, err := range result.Errors() {
 			errorMsg += fmt.Sprintf("  - %s: %s\n", err.Field(), err.Description())
 		}
-		return fmt.Errorf(errorMsg)
+		return fmt.Errorf("%s", errorMsg)
 	}
 
 	return nil

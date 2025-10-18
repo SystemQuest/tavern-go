@@ -217,7 +217,7 @@ func TestClient_VariableSubstitution(t *testing.T) {
 		assert.Equal(t, "test-value", r.URL.Query().Get("param"))
 
 		var body map[string]interface{}
-		json.NewDecoder(r.Body).Decode(&body)
+		_ = json.NewDecoder(r.Body).Decode(&body)
 		assert.Equal(t, "test-name", body["name"])
 
 		w.WriteHeader(http.StatusOK)
@@ -282,7 +282,7 @@ func TestClient_JSONBody(t *testing.T) {
 
 		body, _ := io.ReadAll(r.Body)
 		var data map[string]interface{}
-		json.Unmarshal(body, &data)
+		_ = json.Unmarshal(body, &data)
 
 		assert.Equal(t, "test", data["key"])
 		assert.Equal(t, float64(123), data["number"])
@@ -311,7 +311,7 @@ func TestClient_FormData(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, "application/x-www-form-urlencoded", r.Header.Get("Content-Type"))
 
-		r.ParseForm()
+		_ = r.ParseForm()
 		assert.Equal(t, "value1", r.Form.Get("field1"))
 		assert.Equal(t, "value2", r.Form.Get("field2"))
 

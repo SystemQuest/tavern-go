@@ -349,7 +349,7 @@ func TestIntegration_JSONPayload(t *testing.T) {
 
 	// Create a server that captures the payload
 	server := fixtures.NewMockServer(func(w http.ResponseWriter, r *http.Request) {
-		json.NewDecoder(r.Body).Decode(&receivedPayload)
+		_ = json.NewDecoder(r.Body).Decode(&receivedPayload)
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
 		json.NewEncoder(w).Encode(map[string]interface{}{

@@ -53,7 +53,7 @@ func SimpleJSONResponse(statusCode int, body interface{}) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(statusCode)
-		json.NewEncoder(w).Encode(body)
+		_ = json.NewEncoder(w).Encode(body)
 	}
 }
 
@@ -61,7 +61,7 @@ func SimpleJSONResponse(statusCode int, body interface{}) http.HandlerFunc {
 func ErrorResponse(statusCode int, message string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(statusCode)
-		w.Write([]byte(message))
+		_, _ = w.Write([]byte(message))
 	}
 }
 
@@ -102,13 +102,13 @@ func AuthHandler(validToken string) http.HandlerFunc {
 
 		if auth == "Bearer "+validToken {
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"authenticated": true,
 				"user":          "test_user",
 			})
 		} else {
 			w.WriteHeader(http.StatusUnauthorized)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"error": "unauthorized",
 			})
 		}
