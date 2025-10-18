@@ -11,11 +11,13 @@ pkg/
 ├── request/
 │   ├── base.go          # Base interfaces and common functionality
 │   ├── client.go        # HTTP/REST request executor
+│   ├── shell_client.go  # Shell/CLI command executor
 │   └── config.go        # Request configuration
 └── response/
-    ├── base.go          # Base interfaces and common functionality
-    ├── validator.go     # HTTP/REST response verifier
-    └── config.go        # Response configuration
+    ├── base.go             # Base interfaces and common functionality
+    ├── validator.go        # HTTP/REST response verifier
+    ├── shell_validator.go  # Shell/CLI output verifier
+    └── config.go           # Response configuration
 ```
 
 ## Design Principles
@@ -42,7 +44,8 @@ type Verifier interface {
 
 Each protocol has its own implementation:
 
-- **HTTP/REST**: `client.go` and `validator.go` (current)
+- **HTTP/REST**: `client.go` and `validator.go` (implemented ✅)
+- **Shell/CLI**: `shell_client.go` and `shell_validator.go` (implemented ✅)
 - **TCP**: `tcp_client.go` and `tcp_validator.go` (future)
 - **RESP**: `resp_client.go` and `resp_validator.go` (future)
 - **gRPC**: `grpc_client.go` and `grpc_validator.go` (future)
@@ -56,6 +59,30 @@ Each protocol has its own implementation:
 - Common utilities
 
 ## Future Extensions
+
+### Example: Shell/CLI Testing (Already Implemented)
+
+**Test YAML:**
+```yaml
+test_name: Test CLI tool
+stages:
+  - name: Run command
+    request:
+      url: mycommand      # Command to execute
+      params:
+        flag: value       # Arguments
+      headers:
+        ENV_VAR: value    # Environment variables
+    response:
+      status_code: 0      # Exit code
+      body:
+        contains: "success"  # Check stdout
+      headers:
+        stderr:
+          contains: "warning"  # Check stderr
+```
+
+**See [SHELL_TESTING.md](./SHELL_TESTING.md) for complete documentation.**
 
 ### Adding a New Protocol (Example: TCP)
 
