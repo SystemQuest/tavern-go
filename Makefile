@@ -50,7 +50,7 @@ examples: build
 lint:
 	@echo "Linting..."
 	@which golangci-lint > /dev/null || (echo "golangci-lint not installed. Run: go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest" && exit 1)
-	@golangci-lint run ./...
+	@golangci-lint run --enable=errcheck,govet,staticcheck,unused,ineffassign,misspell --timeout=5m ./...
 
 # Format code
 fmt:
