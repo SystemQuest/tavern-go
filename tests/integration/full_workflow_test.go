@@ -71,7 +71,7 @@ func TestIntegration_MultiStageAuth(t *testing.T) {
 		Stages: []schema.Stage{
 			{
 				Name: "Get token",
-				Request: schema.RequestSpec{
+				Request: &schema.RequestSpec{
 					URL:    server.URL + "/auth/login",
 					Method: "POST",
 					JSON: map[string]interface{}{
@@ -79,7 +79,7 @@ func TestIntegration_MultiStageAuth(t *testing.T) {
 						"password": "secret",
 					},
 				},
-				Response: schema.ResponseSpec{
+				Response: &schema.ResponseSpec{
 					StatusCode: 200,
 					Save: &schema.SaveSpec{
 						Body: map[string]string{
@@ -90,14 +90,14 @@ func TestIntegration_MultiStageAuth(t *testing.T) {
 			},
 			{
 				Name: "Use token",
-				Request: schema.RequestSpec{
+				Request: &schema.RequestSpec{
 					URL:    server.URL + "/api/profile",
 					Method: "GET",
 					Headers: map[string]string{
 						"Authorization": "Bearer {token}",
 					},
 				},
-				Response: schema.ResponseSpec{
+				Response: &schema.ResponseSpec{
 					StatusCode: 200,
 					Body: map[string]interface{}{
 						"authenticated": true,
@@ -148,11 +148,11 @@ func TestIntegration_VariableChaining(t *testing.T) {
 		Stages: []schema.Stage{
 			{
 				Name: "Get user ID",
-				Request: schema.RequestSpec{
+				Request: &schema.RequestSpec{
 					URL:    server.URL + "/api/auth",
 					Method: "POST",
 				},
-				Response: schema.ResponseSpec{
+				Response: &schema.ResponseSpec{
 					StatusCode: 200,
 					Save: &schema.SaveSpec{
 						Body: map[string]string{
@@ -163,11 +163,11 @@ func TestIntegration_VariableChaining(t *testing.T) {
 			},
 			{
 				Name: "Get user details",
-				Request: schema.RequestSpec{
+				Request: &schema.RequestSpec{
 					URL:    server.URL + "/api/users/{user_id}",
 					Method: "GET",
 				},
-				Response: schema.ResponseSpec{
+				Response: &schema.ResponseSpec{
 					StatusCode: 200,
 					Save: &schema.SaveSpec{
 						Body: map[string]string{
@@ -179,14 +179,14 @@ func TestIntegration_VariableChaining(t *testing.T) {
 			},
 			{
 				Name: "Get user orders",
-				Request: schema.RequestSpec{
+				Request: &schema.RequestSpec{
 					URL:    server.URL + "/api/users/{user_id}/orders",
 					Method: "GET",
 					Headers: map[string]string{
 						"X-User-Name": "{user_name}",
 					},
 				},
-				Response: schema.ResponseSpec{
+				Response: &schema.ResponseSpec{
 					StatusCode: 200,
 				},
 			},
@@ -269,11 +269,11 @@ func TestIntegration_ComplexValidation(t *testing.T) {
 		Stages: []schema.Stage{
 			{
 				Name: "Get users",
-				Request: schema.RequestSpec{
+				Request: &schema.RequestSpec{
 					URL:    server.URL + "/api/users",
 					Method: "GET",
 				},
-				Response: schema.ResponseSpec{
+				Response: &schema.ResponseSpec{
 					StatusCode: 200,
 					Body: map[string]interface{}{
 						"status": "success",
@@ -319,11 +319,11 @@ func TestIntegration_HeaderValidation(t *testing.T) {
 		Stages: []schema.Stage{
 			{
 				Name: "Check headers",
-				Request: schema.RequestSpec{
+				Request: &schema.RequestSpec{
 					URL:    server.URL,
 					Method: "GET",
 				},
-				Response: schema.ResponseSpec{
+				Response: &schema.ResponseSpec{
 					StatusCode: 200,
 					Headers: map[string]interface{}{
 						"content-type": "application/json",
@@ -365,7 +365,7 @@ func TestIntegration_JSONPayload(t *testing.T) {
 		Stages: []schema.Stage{
 			{
 				Name: "Create user",
-				Request: schema.RequestSpec{
+				Request: &schema.RequestSpec{
 					URL:    server.URL + "/api/users",
 					Method: "POST",
 					JSON: map[string]interface{}{
@@ -374,7 +374,7 @@ func TestIntegration_JSONPayload(t *testing.T) {
 						"age":   28,
 					},
 				},
-				Response: schema.ResponseSpec{
+				Response: &schema.ResponseSpec{
 					StatusCode: 201,
 					Body: map[string]interface{}{
 						"created": true,
@@ -419,7 +419,7 @@ func TestIntegration_QueryParameters(t *testing.T) {
 		Stages: []schema.Stage{
 			{
 				Name: "Search with filters",
-				Request: schema.RequestSpec{
+				Request: &schema.RequestSpec{
 					URL:    server.URL + "/api/search",
 					Method: "GET",
 					Params: map[string]string{
@@ -428,7 +428,7 @@ func TestIntegration_QueryParameters(t *testing.T) {
 						"limit": "10",
 					},
 				},
-				Response: schema.ResponseSpec{
+				Response: &schema.ResponseSpec{
 					StatusCode: 200,
 					Body: map[string]interface{}{
 						"total": 2,
@@ -485,11 +485,11 @@ func TestIntegration_CookieHandling(t *testing.T) {
 		Stages: []schema.Stage{
 			{
 				Name: "Set cookie",
-				Request: schema.RequestSpec{
+				Request: &schema.RequestSpec{
 					URL:    server.URL + "/login",
 					Method: "POST",
 				},
-				Response: schema.ResponseSpec{
+				Response: &schema.ResponseSpec{
 					StatusCode: 200,
 					Body: map[string]interface{}{
 						"session_created": true,

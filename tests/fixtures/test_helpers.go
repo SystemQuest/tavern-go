@@ -11,11 +11,11 @@ func CreateSimpleTest(url, method string, expectedStatus int) *schema.TestSpec {
 		Stages: []schema.Stage{
 			{
 				Name: "Single stage",
-				Request: schema.RequestSpec{
+				Request: &schema.RequestSpec{
 					URL:    url,
 					Method: method,
 				},
-				Response: schema.ResponseSpec{
+				Response: &schema.ResponseSpec{
 					StatusCode: expectedStatus,
 				},
 			},
@@ -38,14 +38,14 @@ func CreateTestWithVariables(url, method string, vars map[string]interface{}) *s
 		Stages: []schema.Stage{
 			{
 				Name: "Stage with variables",
-				Request: schema.RequestSpec{
+				Request: &schema.RequestSpec{
 					URL:    url,
 					Method: method,
 					Headers: map[string]string{
 						"X-Test-Header": "{test_var}",
 					},
 				},
-				Response: schema.ResponseSpec{
+				Response: &schema.ResponseSpec{
 					StatusCode: 200,
 				},
 			},
@@ -60,7 +60,7 @@ func CreateAuthTest(url, token string) *schema.TestSpec {
 		Stages: []schema.Stage{
 			{
 				Name: "Get token",
-				Request: schema.RequestSpec{
+				Request: &schema.RequestSpec{
 					URL:    url + "/auth",
 					Method: "POST",
 					JSON: map[string]interface{}{
@@ -68,7 +68,7 @@ func CreateAuthTest(url, token string) *schema.TestSpec {
 						"password": "secret",
 					},
 				},
-				Response: schema.ResponseSpec{
+				Response: &schema.ResponseSpec{
 					StatusCode: 200,
 					Save: &schema.SaveSpec{
 						Body: map[string]string{
@@ -79,14 +79,14 @@ func CreateAuthTest(url, token string) *schema.TestSpec {
 			},
 			{
 				Name: "Use token",
-				Request: schema.RequestSpec{
+				Request: &schema.RequestSpec{
 					URL:    url + "/protected",
 					Method: "GET",
 					Headers: map[string]string{
 						"Authorization": "Bearer {token}",
 					},
 				},
-				Response: schema.ResponseSpec{
+				Response: &schema.ResponseSpec{
 					StatusCode: 200,
 					Body: map[string]interface{}{
 						"authenticated": true,
@@ -104,11 +104,11 @@ func CreateTestWithSave(url string, saveKey string, savePath string) *schema.Tes
 		Stages: []schema.Stage{
 			{
 				Name: "Get data",
-				Request: schema.RequestSpec{
+				Request: &schema.RequestSpec{
 					URL:    url,
 					Method: "GET",
 				},
-				Response: schema.ResponseSpec{
+				Response: &schema.ResponseSpec{
 					StatusCode: 200,
 					Save: &schema.SaveSpec{
 						Body: map[string]string{
