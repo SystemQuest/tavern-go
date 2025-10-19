@@ -19,8 +19,9 @@ import (
 
 // RestClient handles REST API requests
 type RestClient struct {
-	httpClient *http.Client
-	config     *Config
+	httpClient  *http.Client
+	config      *Config
+	RequestVars map[string]interface{} // Stores request arguments for access in response validation
 }
 
 // Config holds request configuration
@@ -73,6 +74,10 @@ func (c *RestClient) Execute(spec schema.RequestSpec) (*http.Response, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to build request: %w", err)
 	}
+
+	// Store request variables for access in response validation
+	// Aligned with tavern-py commit 35e52d9: enables {tavern.request_vars.*}
+	c.RequestVars = c.buildRequestVars(formattedSpec, req)
 
 	// Configure HTTP client based on verify setting
 	client := c.httpClient
@@ -313,4 +318,54 @@ func (c *RestClient) setAuth(req *http.Request, auth *schema.AuthSpec) error {
 	}
 
 	return nil
+}
+
+// buildRequestVars builds a map of request variables for access in response validation
+// Aligned with tavern-py commit 35e52d9: provides tavern.request_vars
+func (c *RestClient) buildRequestVars(spec schema.RequestSpec, req *http.Request) map[string]interface{} {
+	requestVars := make(map[string]interface{})
+
+	// Store method from actual request
+	requestVars["method"] = req.Method
+
+	// Store URL
+	requestVars["url"] = spec.URL
+
+	// Store headers from actual request
+	if req.Header != nil && len(req.Header) > 0 {
+		headers := make(map[string]interface{})
+		for key, values := range req.Header {
+			if len(values) == 1 {
+				headers[key] = values[0]
+			} else {
+				headers[key] = values
+			}
+		}
+		requestVars["headers"] = headers
+	}
+
+	// Store params from URL query string
+	if req.URL.Query() != nil && len(req.URL.Query()) > 0 {
+		params := make(map[string]interface{})
+		for key, values := range req.URL.Query() {
+			if len(values) == 1 {
+				params[key] = values[0]
+			} else {
+				params[key] = values
+			}
+		}
+		requestVars["params"] = params
+	}
+
+	// Store JSON body
+	if spec.JSON != nil {
+		requestVars["json"] = spec.JSON
+	}
+
+	// Store data
+	if spec.Data != nil {
+		requestVars["data"] = spec.Data
+	}
+
+	return requestVars
 }

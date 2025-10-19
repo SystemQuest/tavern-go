@@ -1,0 +1,12 @@
+---
+test_name: Test environment variable access
+
+stages:
+  - name: Use environment variable in request
+    request:
+      url: "http://example.com/api"
+      headers:
+        Authorization: "Bearer {tavern.env_vars.TEST_TOKEN}"
+        X-Commit: "{tavern.env_vars.TEST_COMMIT}"
+    response:
+      status_code: 200

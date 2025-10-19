@@ -191,6 +191,12 @@ func (r *Runner) RunTest(test *schema.TestSpec) error {
 				return fmt.Errorf("stage '%s' request failed: %w", stage.Name, err)
 			}
 
+			// Inject request_vars into tavern namespace (aligned with tavern-py commit 35e52d9)
+			// Enables access to request parameters in response validation: {tavern.request_vars.json.field}
+			if tavernVars, ok := testConfig.Variables["tavern"].(map[string]interface{}); ok {
+				tavernVars["request_vars"] = executor.RequestVars
+			}
+
 			validatorConfig := &response.Config{
 				Variables: testConfig.Variables,
 			}
@@ -198,6 +204,11 @@ func (r *Runner) RunTest(test *schema.TestSpec) error {
 			saved, err := validator.Verify(resp)
 			if err != nil {
 				return fmt.Errorf("stage '%s' validation failed: %w", stage.Name, err)
+			}
+
+			// Clean up request_vars after validation (aligned with tavern-py commit 35e52d9)
+			if tavernVars, ok := testConfig.Variables["tavern"].(map[string]interface{}); ok {
+				delete(tavernVars, "request_vars")
 			}
 
 			// Save variables for next stages
