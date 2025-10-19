@@ -36,20 +36,30 @@ func TestClient_MissingVariable(t *testing.T) {
 }
 
 func TestClient_GetWithBody(t *testing.T) {
+	// Aligned with tavern-py commit 8d4db83: GET with body now warns instead of erroring
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "GET", r.Method)
+		// Body is sent even though it's semantically odd
+		body, _ := io.ReadAll(r.Body)
+		assert.NotEmpty(t, body)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
 	client := NewRestClient(&Config{})
 
 	spec := schema.RequestSpec{
-		URL:    "http://example.com",
+		URL:    server.URL,
 		Method: "GET",
 		JSON: map[string]interface{}{
 			"data": "value",
 		},
 	}
 
-	_, err := client.Execute(spec)
-
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "GET request cannot have a body")
+	// Should succeed with a warning (not error)
+	resp, err := client.Execute(spec)
+	require.NoError(t, err)
+	assert.Equal(t, 200, resp.StatusCode)
 }
 
 func TestClient_DefaultMethod(t *testing.T) {
@@ -76,39 +86,52 @@ func TestClient_DefaultMethod(t *testing.T) {
 }
 
 func TestClient_DefaultMethodWithJSONBody(t *testing.T) {
+	// Aligned with tavern-py commit 8d4db83: GET with body now warns instead of erroring
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "GET", r.Method) // Default method is GET
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
 	client := NewRestClient(&Config{})
 
 	spec := schema.RequestSpec{
-		URL: "http://example.com",
-		// Method not specified
+		URL: server.URL,
+		// Method not specified (defaults to GET)
 		JSON: map[string]interface{}{
 			"data": "value",
 		},
 	}
 
-	// Should fail because default method is GET and GET cannot have body
-	_, err := client.Execute(spec)
-
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "GET request cannot have a body")
+	// Should succeed with a warning (default method is GET with body)
+	resp, err := client.Execute(spec)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
 }
 
 func TestClient_DefaultMethodWithDataBody(t *testing.T) {
+	// Aligned with tavern-py commit 8d4db83: GET with body now warns instead of erroring
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "GET", r.Method) // Default method is GET
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
 	client := NewRestClient(&Config{})
 
 	spec := schema.RequestSpec{
-		URL: "http://example.com",
-		// Method not specified
+		URL: server.URL,
+		// Method not specified (defaults to GET)
 		Data: map[string]interface{}{
 			"field": "value",
 		},
 	}
 
-	// Should fail because default method is GET and GET cannot have body
-	_, err := client.Execute(spec)
+	// Should succeed with a warning (default method is GET with body)
+	resp, err := client.Execute(spec)
 
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "GET request cannot have a body")
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
 }
 
 func TestClient_NoRedirects(t *testing.T) {

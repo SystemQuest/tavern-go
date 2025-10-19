@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/sirupsen/logrus"
 	"github.com/systemquest/tavern-go/pkg/extension"
 	"github.com/systemquest/tavern-go/pkg/schema"
 	"github.com/systemquest/tavern-go/pkg/util"
@@ -232,9 +233,10 @@ func (c *RestClient) buildRequest(spec schema.RequestSpec) (*http.Request, error
 		}
 	}
 
-	// Validate GET request doesn't have body
-	if method == "GET" && body != nil {
-		return nil, util.NewTavernError("GET request cannot have a body", nil)
+	// Warn if semantically odd HTTP methods have a body
+	// Aligned with tavern-py commit 8d4db83: changed from error to warning
+	if (method == "GET" || method == "HEAD" || method == "OPTIONS") && body != nil {
+		logrus.Warnf("You are trying to send a body with HTTP %s which has no semantic use for it", method)
 	}
 
 	// Create request
