@@ -236,41 +236,25 @@ func (v *RestValidator) saveWithExt(extSpec interface{}, resp *http.Response) (m
 		return nil, fmt.Errorf("$ext.function must be a string")
 	}
 
-	// Get extra_kwargs
+	// Get extra_kwargs (may be nil for parameterless functions)
 	extraKwargs, _ := extMap["extra_kwargs"].(map[string]interface{})
-
-	// Try to find a parameterized saver function
-	// For validate_regex, we'll call it directly
-	if functionName == "tavern.testutils.helpers:validate_regex" {
-		return ValidateRegexAdapter(resp, extraKwargs)
+	if extraKwargs == nil {
+		extraKwargs = make(map[string]interface{})
 	}
 
-	// Fall back to regular saver (without params)
+	// Try parameterized saver first (for functions with parameters)
+	paramSaver, err := extension.GetParameterizedSaver(functionName)
+	if err == nil {
+		return paramSaver(resp, extraKwargs)
+	}
+
+	// Fall back to regular saver (for backward compatibility)
 	saver, err := extension.GetSaver(functionName)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get saver: %w", err)
+		return nil, fmt.Errorf("failed to get saver '%s': %w", functionName, err)
 	}
 
 	return saver(resp)
-}
-
-// ValidateRegexAdapter adapts validate_regex for use in extension system
-func ValidateRegexAdapter(resp *http.Response, args map[string]interface{}) (map[string]interface{}, error) {
-	expression, ok := args["expression"].(string)
-	if !ok || expression == "" {
-		return nil, fmt.Errorf("regex 'expression' is required in extra_kwargs")
-	}
-
-	// Use the shared regex validator
-	result, err := regex.ValidateReader(resp.Body, expression)
-	if err != nil {
-		return nil, err
-	}
-
-	// Convert regex.Result to map[string]interface{} explicitly
-	return map[string]interface{}{
-		"regex": map[string]interface{}(result),
-	}, nil
 }
 
 // validateWithExt validates using a custom extension function
@@ -311,11 +295,11 @@ func (v *RestValidator) validateBlock(blockName string, actual interface{}, expe
 		extMap, ok := extSpec.(map[string]interface{})
 		if ok {
 			functionName, _ := extMap["function"].(string)
-			if functionName == "tavern.testutils.helpers:validate_regex" {
-				extraKwargs, _ := extMap["extra_kwargs"].(map[string]interface{})
-				expression, _ := extraKwargs["expression"].(string)
+			extraKwargs, _ := extMap["extra_kwargs"].(map[string]interface{})
 
-				// Validate using the shared regex package
+			// For inline regex validation in validateBlock
+			if functionName == "tavern.testutils.helpers:validate_regex" {
+				expression, _ := extraKwargs["expression"].(string)
 				if expression != "" {
 					var dataStr string
 					switch actualData := actual.(type) {
@@ -325,8 +309,8 @@ func (v *RestValidator) validateBlock(blockName string, actual interface{}, expe
 						dataStr = string(actualData)
 					default:
 						// Convert to JSON string for matching
-						jsonBytes, err := json.Marshal(actualData)
-						if err == nil {
+						jsonBytes, jsonErr := json.Marshal(actualData)
+						if jsonErr == nil {
 							dataStr = string(jsonBytes)
 						}
 					}

@@ -15,18 +15,28 @@ type RequestGenerator func() interface{}
 // ResponseSaver is a function that extracts data from a response
 type ResponseSaver func(*http.Response) (map[string]interface{}, error)
 
+// ParameterizedSaver is a response saver that accepts parameters
+type ParameterizedSaver func(*http.Response, map[string]interface{}) (map[string]interface{}, error)
+
+// ParameterizedValidator is a validator that accepts parameters
+type ParameterizedValidator func(*http.Response, map[string]interface{}) error
+
 // Registry manages extension functions
 type Registry struct {
-	mu         sync.RWMutex
-	validators map[string]ResponseValidator
-	generators map[string]RequestGenerator
-	savers     map[string]ResponseSaver
+	mu                      sync.RWMutex
+	validators              map[string]ResponseValidator
+	generators              map[string]RequestGenerator
+	savers                  map[string]ResponseSaver
+	parameterizedSavers     map[string]ParameterizedSaver
+	parameterizedValidators map[string]ParameterizedValidator
 }
 
 var globalRegistry = &Registry{
-	validators: make(map[string]ResponseValidator),
-	generators: make(map[string]RequestGenerator),
-	savers:     make(map[string]ResponseSaver),
+	validators:              make(map[string]ResponseValidator),
+	generators:              make(map[string]RequestGenerator),
+	savers:                  make(map[string]ResponseSaver),
+	parameterizedSavers:     make(map[string]ParameterizedSaver),
+	parameterizedValidators: make(map[string]ParameterizedValidator),
 }
 
 // RegisterValidator registers a response validation function
@@ -48,6 +58,20 @@ func RegisterSaver(name string, fn ResponseSaver) {
 	globalRegistry.mu.Lock()
 	defer globalRegistry.mu.Unlock()
 	globalRegistry.savers[name] = fn
+}
+
+// RegisterParameterizedSaver registers a parameterized response saver function
+func RegisterParameterizedSaver(name string, fn ParameterizedSaver) {
+	globalRegistry.mu.Lock()
+	defer globalRegistry.mu.Unlock()
+	globalRegistry.parameterizedSavers[name] = fn
+}
+
+// RegisterParameterizedValidator registers a parameterized validator function
+func RegisterParameterizedValidator(name string, fn ParameterizedValidator) {
+	globalRegistry.mu.Lock()
+	defer globalRegistry.mu.Unlock()
+	globalRegistry.parameterizedValidators[name] = fn
 }
 
 // GetValidator retrieves a registered validator function
@@ -82,6 +106,30 @@ func GetSaver(name string) (ResponseSaver, error) {
 	fn, ok := globalRegistry.savers[name]
 	if !ok {
 		return nil, fmt.Errorf("saver not found: %s", name)
+	}
+	return fn, nil
+}
+
+// GetParameterizedSaver retrieves a registered parameterized saver function
+func GetParameterizedSaver(name string) (ParameterizedSaver, error) {
+	globalRegistry.mu.RLock()
+	defer globalRegistry.mu.RUnlock()
+
+	fn, ok := globalRegistry.parameterizedSavers[name]
+	if !ok {
+		return nil, fmt.Errorf("parameterized saver not found: %s", name)
+	}
+	return fn, nil
+}
+
+// GetParameterizedValidator retrieves a registered parameterized validator function
+func GetParameterizedValidator(name string) (ParameterizedValidator, error) {
+	globalRegistry.mu.RLock()
+	defer globalRegistry.mu.RUnlock()
+
+	fn, ok := globalRegistry.parameterizedValidators[name]
+	if !ok {
+		return nil, fmt.Errorf("parameterized validator not found: %s", name)
 	}
 	return fn, nil
 }
@@ -122,6 +170,30 @@ func ListSavers() []string {
 	return names
 }
 
+// ListParameterizedSavers returns all registered parameterized saver names
+func ListParameterizedSavers() []string {
+	globalRegistry.mu.RLock()
+	defer globalRegistry.mu.RUnlock()
+
+	names := make([]string, 0, len(globalRegistry.parameterizedSavers))
+	for name := range globalRegistry.parameterizedSavers {
+		names = append(names, name)
+	}
+	return names
+}
+
+// ListParameterizedValidators returns all registered parameterized validator names
+func ListParameterizedValidators() []string {
+	globalRegistry.mu.RLock()
+	defer globalRegistry.mu.RUnlock()
+
+	names := make([]string, 0, len(globalRegistry.parameterizedValidators))
+	for name := range globalRegistry.parameterizedValidators {
+		names = append(names, name)
+	}
+	return names
+}
+
 // Clear clears all registered functions (useful for testing)
 func Clear() {
 	globalRegistry.mu.Lock()
@@ -130,4 +202,6 @@ func Clear() {
 	globalRegistry.validators = make(map[string]ResponseValidator)
 	globalRegistry.generators = make(map[string]RequestGenerator)
 	globalRegistry.savers = make(map[string]ResponseSaver)
+	globalRegistry.parameterizedSavers = make(map[string]ParameterizedSaver)
+	globalRegistry.parameterizedValidators = make(map[string]ParameterizedValidator)
 }
