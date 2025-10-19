@@ -1,0 +1,113 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["test_name", "stages"],
+  "properties": {
+    "test_name": {
+      "type": "string",
+      "description": "Name of the test"
+    },
+    "includes": {
+      "type": "array",
+      "description": "Include blocks with variables",
+      "items": {
+        "type": "object",
+        "required": ["name", "description"],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "variables": {
+            "type": "object"
+          }
+        }
+      }
+    },
+    "stages": {
+      "type": "array",
+      "description": "Test stages",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["name", "request", "response"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Stage name"
+          },
+          "request": {
+            "type": "object",
+            "required": ["url"],
+            "properties": {
+              "url": {
+                "type": "string"
+              },
+              "method": {
+                "type": "string",
+                "enum": ["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"]
+              },
+              "headers": {
+                "type": "object"
+              },
+              "json": {},
+              "data": {},
+              "params": {
+                "type": "object"
+              },
+              "auth": {
+                "type": "object"
+              },
+              "files": {
+                "type": "object"
+              },
+              "cookies": {
+                "type": "object"
+              },
+              "verify": {
+                "type": "boolean",
+                "description": "Whether to verify SSL certificates (default: true)"
+              }
+            }
+          },
+          "response": {
+            "type": "object",
+            "properties": {
+              "status_code": {
+                "type": "integer"
+              },
+              "headers": {
+                "type": "object"
+              },
+              "body": {},
+              "cookies": {
+                "type": "array",
+                "description": "Expected cookie names to verify in response",
+                "uniqueItems": true,
+                "items": {
+                  "type": "string"
+                }
+              },
+              "save": {
+                "type": "object",
+                "properties": {
+                  "body": {
+                    "type": "object"
+                  },
+                  "headers": {
+                    "type": "object"
+                  },
+                  "redirect_query_params": {
+                    "type": "object"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
