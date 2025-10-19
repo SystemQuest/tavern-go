@@ -332,7 +332,7 @@ func (c *RestClient) buildRequestVars(spec schema.RequestSpec, req *http.Request
 	requestVars["url"] = spec.URL
 
 	// Store headers from actual request
-	if req.Header != nil && len(req.Header) > 0 {
+	if len(req.Header) > 0 {
 		headers := make(map[string]interface{})
 		for key, values := range req.Header {
 			if len(values) == 1 {
@@ -345,7 +345,7 @@ func (c *RestClient) buildRequestVars(spec schema.RequestSpec, req *http.Request
 	}
 
 	// Store params from URL query string
-	if req.URL.Query() != nil && len(req.URL.Query()) > 0 {
+	if len(req.URL.Query()) > 0 {
 		params := make(map[string]interface{})
 		for key, values := range req.URL.Query() {
 			if len(values) == 1 {

@@ -18,7 +18,7 @@ func TestRunner_RequestVars(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Echo back request details
 		var requestBody map[string]interface{}
-		json.NewDecoder(r.Body).Decode(&requestBody)
+		_ = json.NewDecoder(r.Body).Decode(&requestBody)
 
 		response := map[string]interface{}{
 			"method":       r.Method,
@@ -28,7 +28,7 @@ func TestRunner_RequestVars(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -77,7 +77,7 @@ func TestRunner_RequestVarsHeaders(t *testing.T) {
 			"auth_header": r.Header.Get("Authorization"),
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -122,7 +122,7 @@ func TestRunner_RequestVarsParams(t *testing.T) {
 			"page":   r.URL.Query().Get("page"),
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -170,7 +170,7 @@ func TestRunner_RequestVarsCleanup(t *testing.T) {
 			"call": callCount,
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
