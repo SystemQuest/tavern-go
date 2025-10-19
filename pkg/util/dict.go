@@ -22,6 +22,7 @@ func FormatKeys(val interface{}, variables map[string]interface{}) (interface{},
 }
 
 // formatString replaces variables in a string
+// Supports both flat variables {var} and nested variables {a.b.c}
 func formatString(s string, variables map[string]interface{}) (string, error) {
 	result := s
 
@@ -38,10 +39,22 @@ func formatString(s string, variables map[string]interface{}) (string, error) {
 		}
 		end += start
 
-		varName := result[start+1 : end]
-		value, ok := variables[varName]
+		varPath := result[start+1 : end]
+
+		// Support nested access with dots (e.g., tavern.env_vars.TOKEN)
+		var value interface{}
+		var ok bool
+
+		if strings.Contains(varPath, ".") {
+			// Nested variable access
+			value, ok = getNestedValue(variables, varPath)
+		} else {
+			// Simple variable access
+			value, ok = variables[varPath]
+		}
+
 		if !ok {
-			return "", NewMissingFormatError(varName)
+			return "", NewMissingFormatError(varPath)
 		}
 
 		// Convert value to string
@@ -59,6 +72,28 @@ func formatString(s string, variables map[string]interface{}) (string, error) {
 	}
 
 	return result, nil
+}
+
+// getNestedValue retrieves a value from nested maps using dot notation
+// Example: "tavern.env_vars.TOKEN" -> variables["tavern"]["env_vars"]["TOKEN"]
+func getNestedValue(variables map[string]interface{}, path string) (interface{}, bool) {
+	keys := strings.Split(path, ".")
+	var current interface{} = variables
+
+	for _, key := range keys {
+		switch v := current.(type) {
+		case map[string]interface{}:
+			val, ok := v[key]
+			if !ok {
+				return nil, false
+			}
+			current = val
+		default:
+			return nil, false
+		}
+	}
+
+	return current, true
 }
 
 // formatMap recursively formats a map

@@ -153,3 +153,91 @@ func TestDeepMerge(t *testing.T) {
 	result := DeepMerge(dst, src)
 	assert.Equal(t, expected, result)
 }
+
+// TestFormatKeys_NestedVariables tests nested variable access with dot notation
+// Aligned with tavern-py commit 1b55d6e: supports {tavern.env_vars.VAR_NAME}
+func TestFormatKeys_NestedVariables(t *testing.T) {
+	variables := map[string]interface{}{
+		"tavern": map[string]interface{}{
+			"env_vars": map[string]interface{}{
+				"TOKEN":     "secret123",
+				"API_KEY":   "key456",
+				"CI_COMMIT": "abc789",
+			},
+		},
+		"user": map[string]interface{}{
+			"name": "John",
+			"profile": map[string]interface{}{
+				"email": "john@example.com",
+			},
+		},
+	}
+
+	tests := []struct {
+		name     string
+		input    interface{}
+		expected interface{}
+		wantErr  bool
+	}{
+		{
+			name:     "simple nested access",
+			input:    "Token: {tavern.env_vars.TOKEN}",
+			expected: "Token: secret123",
+			wantErr:  false,
+		},
+		{
+			name:     "multiple nested variables",
+			input:    "API Key: {tavern.env_vars.API_KEY}, Commit: {tavern.env_vars.CI_COMMIT}",
+			expected: "API Key: key456, Commit: abc789",
+			wantErr:  false,
+		},
+		{
+			name:     "nested user access",
+			input:    "Email: {user.profile.email}",
+			expected: "Email: john@example.com",
+			wantErr:  false,
+		},
+		{
+			name: "nested in map",
+			input: map[string]interface{}{
+				"auth":  "Bearer {tavern.env_vars.TOKEN}",
+				"email": "{user.profile.email}",
+			},
+			expected: map[string]interface{}{
+				"auth":  "Bearer secret123",
+				"email": "john@example.com",
+			},
+			wantErr: false,
+		},
+		{
+			name:     "missing nested variable",
+			input:    "Value: {tavern.env_vars.MISSING}",
+			expected: nil,
+			wantErr:  true,
+		},
+		{
+			name:     "invalid nested path",
+			input:    "Value: {tavern.missing.TOKEN}",
+			expected: nil,
+			wantErr:  true,
+		},
+		{
+			name:     "mixed flat and nested",
+			input:    "{user.name} has token {tavern.env_vars.TOKEN}",
+			expected: "John has token secret123",
+			wantErr:  false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := FormatKeys(tt.input, variables)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expected, result)
+			}
+		})
+	}
+}

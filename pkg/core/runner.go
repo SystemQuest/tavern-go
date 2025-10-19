@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/cookiejar"
+	"os"
+	"strings"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -142,6 +144,12 @@ func (r *Runner) RunTest(test *schema.TestSpec) error {
 		HTTPClient: sharedHTTPClient, // Share HTTP client across all stages
 	}
 
+	// Inject tavern magic variables (aligned with tavern-py commit 1b55d6e)
+	// Provides access to environment variables via {tavern.env_vars.VAR_NAME}
+	testConfig.Variables["tavern"] = map[string]interface{}{
+		"env_vars": getEnvVarsMap(),
+	}
+
 	// Merge global variables
 	for k, v := range r.config.Variables {
 		testConfig.Variables[k] = v
@@ -270,4 +278,17 @@ func (r *Runner) ValidateFile(filename string) error {
 	}
 
 	return nil
+}
+
+// getEnvVarsMap returns all environment variables as a map
+// Aligned with tavern-py commit 1b55d6e: provides access to os.environ
+func getEnvVarsMap() map[string]interface{} {
+	envMap := make(map[string]interface{})
+	for _, env := range os.Environ() {
+		parts := strings.SplitN(env, "=", 2)
+		if len(parts) == 2 {
+			envMap[parts[0]] = parts[1]
+		}
+	}
+	return envMap
 }
