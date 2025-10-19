@@ -11,6 +11,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"github.com/systemquest/tavern-go/pkg/extension"
+	"github.com/systemquest/tavern-go/pkg/regex"
 	"github.com/systemquest/tavern-go/pkg/schema"
 	"github.com/systemquest/tavern-go/pkg/util"
 )
@@ -85,16 +86,7 @@ func (v *RestValidator) Verify(resp *http.Response) (map[string]interface{}, err
 		err = json.Unmarshal(bodyBytes, &bodyData)
 		if err != nil {
 			// Not JSON, keep as string
-			bodyData = nil
-		}
-	} // Check for custom validation function
-	if v.spec.Body != nil {
-		if bodyMap, ok := v.spec.Body.(map[string]interface{}); ok {
-			if extSpec, ok := bodyMap["$ext"]; ok {
-				if err := v.validateWithExt(extSpec, resp); err != nil {
-					v.addError(fmt.Sprintf("custom validation failed: %v", err))
-				}
-			}
+			bodyData = string(bodyBytes)
 		}
 	}
 
@@ -126,61 +118,102 @@ func (v *RestValidator) Verify(resp *http.Response) (map[string]interface{}, err
 
 	// Save values
 	if v.spec.Save != nil {
-		// Save from body
-		if v.spec.Save.Body != nil {
-			// Parse body as generic interface for array support
-			var bodyData interface{}
-			if len(bodyBytes) > 0 {
-				err = json.Unmarshal(bodyBytes, &bodyData)
+		var saveSpec *schema.SaveSpec
+		var ok bool
+
+		// Check if Save is a $ext specification
+		if saveMap, ok := v.spec.Save.(map[string]interface{}); ok {
+			if extSpec, hasExt := saveMap["$ext"]; hasExt {
+				// Handle $ext in save
+				extSaved, err := v.saveWithExt(extSpec, resp)
 				if err != nil {
-					v.addError(fmt.Sprintf("failed to parse body for saving: %v", err))
+					v.addError(fmt.Sprintf("failed to save with extension: %v", err))
 				} else {
-					for saveName, jsonPath := range v.spec.Save.Body {
-						val, err := v.extractValue(bodyData, jsonPath)
-						if err != nil {
-							v.addError(fmt.Sprintf("failed to save %s from body: %v", saveName, err))
-						} else {
-							saved[saveName] = val
+					for k, v := range extSaved {
+						saved[k] = v
+					}
+				}
+				// Skip regular save processing
+				goto skipRegularSave
+			}
+		}
+
+		// Cast to SaveSpec for regular save processing
+		saveSpec, ok = v.spec.Save.(*schema.SaveSpec)
+		if !ok {
+			// Try to convert map to SaveSpec
+			if saveMap, ok := v.spec.Save.(map[string]interface{}); ok {
+				saveSpec = &schema.SaveSpec{}
+				if body, ok := saveMap["body"].(map[string]string); ok {
+					saveSpec.Body = body
+				}
+				if headers, ok := saveMap["headers"].(map[string]string); ok {
+					saveSpec.Headers = headers
+				}
+				if params, ok := saveMap["redirect_query_params"].(map[string]string); ok {
+					saveSpec.RedirectQueryParams = params
+				}
+			}
+		}
+
+		if saveSpec != nil {
+			// Save from body
+			if saveSpec.Body != nil {
+				// Parse body as generic interface for array support
+				var bodyData interface{}
+				if len(bodyBytes) > 0 {
+					err = json.Unmarshal(bodyBytes, &bodyData)
+					if err != nil {
+						v.addError(fmt.Sprintf("failed to parse body for saving: %v", err))
+					} else {
+						for saveName, jsonPath := range saveSpec.Body {
+							val, err := v.extractValue(bodyData, jsonPath)
+							if err != nil {
+								v.addError(fmt.Sprintf("failed to save %s from body: %v", saveName, err))
+							} else {
+								saved[saveName] = val
+							}
+						}
+					}
+				}
+			}
+
+			// Save from headers
+			if saveSpec.Headers != nil {
+				for saveName, headerName := range saveSpec.Headers {
+					val := resp.Header.Get(headerName)
+					if val == "" {
+						v.addError(fmt.Sprintf("header %s not found for saving as %s", headerName, saveName))
+					} else {
+						saved[saveName] = val
+					}
+				}
+			}
+
+			// Save from redirect query params
+			if saveSpec.RedirectQueryParams != nil {
+				location := resp.Header.Get("Location")
+				if location == "" {
+					v.addError("no Location header for redirect_query_params")
+				} else {
+					parsedURL, err := url.Parse(location)
+					if err != nil {
+						v.addError(fmt.Sprintf("failed to parse redirect URL: %v", err))
+					} else {
+						queryParams := parsedURL.Query()
+						for saveName, paramName := range saveSpec.RedirectQueryParams {
+							val := queryParams.Get(paramName)
+							if val == "" {
+								v.addError(fmt.Sprintf("query param %s not found in redirect URL", paramName))
+							} else {
+								saved[saveName] = val
+							}
 						}
 					}
 				}
 			}
 		}
-
-		// Save from headers
-		if v.spec.Save.Headers != nil {
-			for saveName, headerName := range v.spec.Save.Headers {
-				val := resp.Header.Get(headerName)
-				if val == "" {
-					v.addError(fmt.Sprintf("header %s not found for saving as %s", headerName, saveName))
-				} else {
-					saved[saveName] = val
-				}
-			}
-		}
-
-		// Save from redirect query params
-		if v.spec.Save.RedirectQueryParams != nil {
-			location := resp.Header.Get("Location")
-			if location == "" {
-				v.addError("no Location header for redirect_query_params")
-			} else {
-				parsedURL, err := url.Parse(location)
-				if err != nil {
-					v.addError(fmt.Sprintf("failed to parse redirect URL: %v", err))
-				} else {
-					queryParams := parsedURL.Query()
-					for saveName, paramName := range v.spec.Save.RedirectQueryParams {
-						val := queryParams.Get(paramName)
-						if val == "" {
-							v.addError(fmt.Sprintf("query param %s not found in redirect URL", paramName))
-						} else {
-							saved[saveName] = val
-						}
-					}
-				}
-			}
-		}
+	skipRegularSave:
 	}
 
 	// Check for errors
@@ -189,6 +222,55 @@ func (v *RestValidator) Verify(resp *http.Response) (map[string]interface{}, err
 	}
 
 	return saved, nil
+}
+
+// saveWithExt saves data using a custom extension function
+func (v *RestValidator) saveWithExt(extSpec interface{}, resp *http.Response) (map[string]interface{}, error) {
+	extMap, ok := extSpec.(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("$ext must be a map")
+	}
+
+	functionName, ok := extMap["function"].(string)
+	if !ok {
+		return nil, fmt.Errorf("$ext.function must be a string")
+	}
+
+	// Get extra_kwargs
+	extraKwargs, _ := extMap["extra_kwargs"].(map[string]interface{})
+
+	// Try to find a parameterized saver function
+	// For validate_regex, we'll call it directly
+	if functionName == "tavern.testutils.helpers:validate_regex" {
+		return ValidateRegexAdapter(resp, extraKwargs)
+	}
+
+	// Fall back to regular saver (without params)
+	saver, err := extension.GetSaver(functionName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get saver: %w", err)
+	}
+
+	return saver(resp)
+}
+
+// ValidateRegexAdapter adapts validate_regex for use in extension system
+func ValidateRegexAdapter(resp *http.Response, args map[string]interface{}) (map[string]interface{}, error) {
+	expression, ok := args["expression"].(string)
+	if !ok || expression == "" {
+		return nil, fmt.Errorf("regex 'expression' is required in extra_kwargs")
+	}
+
+	// Use the shared regex validator
+	result, err := regex.ValidateReader(resp.Body, expression)
+	if err != nil {
+		return nil, err
+	}
+
+	// Convert regex.Result to map[string]interface{} explicitly
+	return map[string]interface{}{
+		"regex": map[string]interface{}(result),
+	}, nil
 }
 
 // validateWithExt validates using a custom extension function
@@ -222,6 +304,41 @@ func (v *RestValidator) validateBlock(blockName string, actual interface{}, expe
 	expectedMap, ok := expected.(map[string]interface{})
 	if !ok {
 		return
+	}
+
+	// Handle $ext validation before processing other keys
+	if extSpec, hasExt := expectedMap["$ext"]; hasExt {
+		extMap, ok := extSpec.(map[string]interface{})
+		if ok {
+			functionName, _ := extMap["function"].(string)
+			if functionName == "tavern.testutils.helpers:validate_regex" {
+				extraKwargs, _ := extMap["extra_kwargs"].(map[string]interface{})
+				expression, _ := extraKwargs["expression"].(string)
+
+				// Validate using the shared regex package
+				if expression != "" {
+					var dataStr string
+					switch actualData := actual.(type) {
+					case string:
+						dataStr = actualData
+					case []byte:
+						dataStr = string(actualData)
+					default:
+						// Convert to JSON string for matching
+						jsonBytes, err := json.Marshal(actualData)
+						if err == nil {
+							dataStr = string(jsonBytes)
+						}
+					}
+
+					// Use shared regex validator
+					_, err := regex.Validate(dataStr, expression)
+					if err != nil {
+						v.addError(fmt.Sprintf("%s: %v", blockName, err))
+					}
+				}
+			}
+		}
 	}
 
 	// Remove special keys

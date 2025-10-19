@@ -57,18 +57,21 @@ func (v *ShellValidator) Verify(response interface{}) (map[string]interface{}, e
 
 	// Save values if specified
 	if v.spec.Save != nil {
-		if v.spec.Save.Body != nil {
-			for varName, pattern := range v.spec.Save.Body {
-				if value := v.extractFromOutput(shellResp.Stdout, pattern); value != "" {
-					saved[varName] = value
+		// Cast to SaveSpec
+		if saveSpec, ok := v.spec.Save.(*schema.SaveSpec); ok {
+			if saveSpec.Body != nil {
+				for varName, pattern := range saveSpec.Body {
+					if value := v.extractFromOutput(shellResp.Stdout, pattern); value != "" {
+						saved[varName] = value
+					}
 				}
 			}
-		}
 
-		if v.spec.Save.Headers != nil {
-			for varName, pattern := range v.spec.Save.Headers {
-				if value := v.extractFromOutput(shellResp.Stderr, pattern); value != "" {
-					saved[varName] = value
+			if saveSpec.Headers != nil {
+				for varName, pattern := range saveSpec.Headers {
+					if value := v.extractFromOutput(shellResp.Stderr, pattern); value != "" {
+						saved[varName] = value
+					}
 				}
 			}
 		}

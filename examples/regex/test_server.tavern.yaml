@@ -1,0 +1,42 @@
+---
+# Example test demonstrating regex validation and variable extraction
+# Aligned with tavern-py commit 5a46eef
+
+test_name: Make sure server response matches regex
+
+stages:
+  # Stage 1: Simple regex match - just validate the pattern exists
+  - name: simple match
+    request:
+      url: http://localhost:5000/token
+      method: GET
+    response:
+      status_code: 200
+      body:
+        $ext:
+          function: tavern.testutils.helpers:validate_regex
+          extra_kwargs:
+            expression: '<a href=\".*\">'
+
+  # Stage 2: Extract named groups from regex
+  - name: save groups
+    request:
+      url: http://localhost:5000/token
+      method: GET
+    response:
+      status_code: 200
+      save:
+        $ext:
+          function: tavern.testutils.helpers:validate_regex
+          extra_kwargs:
+            expression: '<a href=\"(?P<url>.*?)\?token=(?P<token>.*?)\">'
+
+  # Stage 3: Use the extracted values in a subsequent request
+  - name: send saved
+    request:
+      url: "{regex.url}"
+      method: GET
+      params:
+        token: "{regex.token}"
+    response:
+      status_code: 200

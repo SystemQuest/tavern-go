@@ -69,7 +69,7 @@ type ResponseSpec struct {
 	Headers    map[string]interface{} `yaml:"headers,omitempty" json:"headers,omitempty"`
 	Body       interface{}            `yaml:"body,omitempty" json:"body,omitempty"`
 	Cookies    []string               `yaml:"cookies,omitempty" json:"cookies,omitempty"` // Expected cookie names
-	Save       *SaveSpec              `yaml:"save,omitempty" json:"save,omitempty"`
+	Save       interface{}            `yaml:"save,omitempty" json:"save,omitempty"`       // Can be SaveSpec or $ext map
 }
 
 // SaveSpec specifies what to save from the response

@@ -6,6 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/systemquest/tavern-go/pkg/core"
+	_ "github.com/systemquest/tavern-go/pkg/testutils" // Register extension functions
 	"github.com/systemquest/tavern-go/pkg/version"
 )
 
