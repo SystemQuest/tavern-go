@@ -166,6 +166,9 @@ func (r *Runner) RunTest(test *schema.TestSpec) error {
 	for i, stage := range test.Stages {
 		r.logger.Infof("Running stage %d/%d: %s", i+1, len(test.Stages), stage.Name)
 
+		// Delay before stage execution
+		delay(&stage, "before")
+
 		// Protocol detection - check stage-level keys (aligned with tavern-py)
 		// tavern-py checks: if "request" in stage / elif "mqtt_publish" in stage
 		if stage.Request != nil {
@@ -205,6 +208,9 @@ func (r *Runner) RunTest(test *schema.TestSpec) error {
 		}
 
 		r.logger.Infof("Stage passed: %s", stage.Name)
+
+		// Delay after stage execution
+		delay(&stage, "after")
 	}
 
 	return nil

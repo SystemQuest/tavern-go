@@ -24,6 +24,10 @@ type Include struct {
 type Stage struct {
 	Name string `yaml:"name" json:"name"`
 
+	// Delay controls (in seconds)
+	DelayBefore *float64 `yaml:"delay_before,omitempty" json:"delay_before,omitempty"`
+	DelayAfter  *float64 `yaml:"delay_after,omitempty" json:"delay_after,omitempty"`
+
 	// REST/HTTP protocol fields
 	Request  *RequestSpec  `yaml:"request,omitempty" json:"request,omitempty"`
 	Response *ResponseSpec `yaml:"response,omitempty" json:"response,omitempty"`

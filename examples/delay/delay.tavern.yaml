@@ -1,0 +1,36 @@
+---
+test_name: Test with delays
+
+stages:
+  - name: Wait before request
+    delay_before: 0.5  # Wait 0.5 seconds before executing
+    request:
+      url: "https://httpbin.org/delay/0"
+      method: GET
+    response:
+      status_code: 200
+
+  - name: Check status after delay
+    delay_before: 1.0  # Wait 1 second to simulate async operation completion
+    request:
+      url: "https://httpbin.org/get"
+      method: GET
+    response:
+      status_code: 200
+    delay_after: 0.5  # Wait 0.5 seconds after completion
+
+  - name: Rate limiting simulation
+    delay_before: 0.3
+    request:
+      url: "https://httpbin.org/get"
+      method: GET
+    response:
+      status_code: 200
+    delay_after: 0.3
+
+  - name: Final check
+    request:
+      url: "https://httpbin.org/get"
+      method: GET
+    response:
+      status_code: 200

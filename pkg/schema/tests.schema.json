@@ -38,6 +38,16 @@
             "type": "string",
             "description": "Stage name"
           },
+          "delay_before": {
+            "type": "number",
+            "description": "Delay in seconds before executing the stage",
+            "minimum": 0
+          },
+          "delay_after": {
+            "type": "number",
+            "description": "Delay in seconds after executing the stage",
+            "minimum": 0
+          },
           "request": {
             "type": "object",
             "required": ["url"],
