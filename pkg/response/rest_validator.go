@@ -257,26 +257,6 @@ func (v *RestValidator) saveWithExt(extSpec interface{}, resp *http.Response) (m
 	return saver(resp)
 }
 
-// validateWithExt validates using a custom extension function
-func (v *RestValidator) validateWithExt(extSpec interface{}, resp *http.Response) error {
-	extMap, ok := extSpec.(map[string]interface{})
-	if !ok {
-		return fmt.Errorf("$ext must be a map")
-	}
-
-	functionName, ok := extMap["function"].(string)
-	if !ok {
-		return fmt.Errorf("$ext.function must be a string")
-	}
-
-	validator, err := extension.GetValidator(functionName)
-	if err != nil {
-		return fmt.Errorf("failed to get validator: %w", err)
-	}
-
-	return validator(resp)
-}
-
 // validateBlock validates a block (body or headers)
 func (v *RestValidator) validateBlock(blockName string, actual interface{}, expected interface{}) {
 	// Check if expected is an array (support list validation like tavern-py)
