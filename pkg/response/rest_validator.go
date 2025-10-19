@@ -206,67 +206,19 @@ skipRegularSave:
 
 // saveWithExtSpec saves data using a custom extension function (type-safe version)
 func (v *RestValidator) saveWithExtSpec(ext *schema.ExtSpec, resp *http.Response) (map[string]interface{}, error) {
-	if ext == nil {
-		return nil, fmt.Errorf("ext spec cannot be nil")
-	}
-
-	functionName := ext.Function
-	if functionName == "" {
-		return nil, fmt.Errorf("ext.function cannot be empty")
-	}
-
-	// Get extra_kwargs (may be nil for parameterless functions)
-	extraKwargs := ext.ExtraKwargs
-	if extraKwargs == nil {
-		extraKwargs = make(map[string]interface{})
-	}
-
-	// Try parameterized saver first (for functions with parameters)
-	paramSaver, err := extension.GetParameterizedSaver(functionName)
-	if err == nil {
-		return paramSaver(resp, extraKwargs)
-	}
-
-	// Fall back to regular saver (for backward compatibility)
-	saver, err := extension.GetSaver(functionName)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get saver '%s': %w", functionName, err)
-	}
-
-	return saver(resp)
+	executor := extension.NewExecutor()
+	return executor.ExecuteSaver(ext, resp)
 }
 
 // saveWithExt saves data using a custom extension function (legacy interface{} version for backward compatibility)
+// Deprecated: Use saveWithExtSpec with typed ExtSpec instead
 func (v *RestValidator) saveWithExt(extSpec interface{}, resp *http.Response) (map[string]interface{}, error) {
-	extMap, ok := extSpec.(map[string]interface{})
-	if !ok {
-		return nil, fmt.Errorf("$ext must be a map")
-	}
-
-	functionName, ok := extMap["function"].(string)
-	if !ok {
-		return nil, fmt.Errorf("$ext.function must be a string")
-	}
-
-	// Get extra_kwargs (may be nil for parameterless functions)
-	extraKwargs, _ := extMap["extra_kwargs"].(map[string]interface{})
-	if extraKwargs == nil {
-		extraKwargs = make(map[string]interface{})
-	}
-
-	// Try parameterized saver first (for functions with parameters)
-	paramSaver, err := extension.GetParameterizedSaver(functionName)
-	if err == nil {
-		return paramSaver(resp, extraKwargs)
-	}
-
-	// Fall back to regular saver (for backward compatibility)
-	saver, err := extension.GetSaver(functionName)
+	// Convert to ExtSpec and delegate to type-safe version
+	ext, err := extension.ConvertToExtSpec(extSpec)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get saver '%s': %w", functionName, err)
+		return nil, err
 	}
-
-	return saver(resp)
+	return v.saveWithExtSpec(ext, resp)
 }
 
 // validateBlock validates a block (body or headers)
