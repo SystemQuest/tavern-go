@@ -210,17 +210,6 @@ func (v *RestValidator) saveWithExtSpec(ext *schema.ExtSpec, resp *http.Response
 	return executor.ExecuteSaver(ext, resp)
 }
 
-// saveWithExt saves data using a custom extension function (legacy interface{} version for backward compatibility)
-// Deprecated: Use saveWithExtSpec with typed ExtSpec instead
-func (v *RestValidator) saveWithExt(extSpec interface{}, resp *http.Response) (map[string]interface{}, error) {
-	// Convert to ExtSpec and delegate to type-safe version
-	ext, err := extension.ConvertToExtSpec(extSpec)
-	if err != nil {
-		return nil, err
-	}
-	return v.saveWithExtSpec(ext, resp)
-}
-
 // validateBlock validates a block (body or headers)
 func (v *RestValidator) validateBlock(blockName string, actual interface{}, expected interface{}) {
 	// Check if expected is an array (support list validation like tavern-py)
