@@ -233,8 +233,10 @@ func (c *RestClient) buildRequest(spec schema.RequestSpec) (*http.Request, error
 		}
 	}
 
-	// Warn if semantically odd HTTP methods have a body
-	// Aligned with tavern-py commit 8d4db83: changed from error to warning
+	// These verbs CAN send a body but the body SHOULD be ignored according to the HTTP specs.
+	// While technically allowed, it's semantically incorrect and many servers/proxies may reject or ignore the body.
+	// Reference: https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods
+	// Aligned with tavern-py commits: 8d4db83 (warning logic), da8ed22 (documentation)
 	if (method == "GET" || method == "HEAD" || method == "OPTIONS") && body != nil {
 		logrus.Warnf("You are trying to send a body with HTTP %s which has no semantic use for it", method)
 	}
