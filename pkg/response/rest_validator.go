@@ -144,14 +144,45 @@ func (v *RestValidator) Verify(resp *http.Response) (map[string]interface{}, err
 			// Try to convert map to SaveSpec
 			if saveMap, ok := v.spec.Save.(map[string]interface{}); ok {
 				saveSpec = &schema.SaveSpec{}
-				if body, ok := saveMap["body"].(map[string]string); ok {
-					saveSpec.Body = body
+				// Convert body - handle both map[string]string and map[string]interface{}
+				if bodyInterface, ok := saveMap["body"]; ok {
+					if body, ok := bodyInterface.(map[string]string); ok {
+						saveSpec.Body = body
+					} else if bodyMap, ok := bodyInterface.(map[string]interface{}); ok {
+						// Convert map[string]interface{} to map[string]string
+						saveSpec.Body = make(map[string]string)
+						for k, v := range bodyMap {
+							if str, ok := v.(string); ok {
+								saveSpec.Body[k] = str
+							}
+						}
+					}
 				}
-				if headers, ok := saveMap["headers"].(map[string]string); ok {
-					saveSpec.Headers = headers
+				// Convert headers - handle both map[string]string and map[string]interface{}
+				if headersInterface, ok := saveMap["headers"]; ok {
+					if headers, ok := headersInterface.(map[string]string); ok {
+						saveSpec.Headers = headers
+					} else if headersMap, ok := headersInterface.(map[string]interface{}); ok {
+						saveSpec.Headers = make(map[string]string)
+						for k, v := range headersMap {
+							if str, ok := v.(string); ok {
+								saveSpec.Headers[k] = str
+							}
+						}
+					}
 				}
-				if params, ok := saveMap["redirect_query_params"].(map[string]string); ok {
-					saveSpec.RedirectQueryParams = params
+				// Convert redirect_query_params - handle both map[string]string and map[string]interface{}
+				if paramsInterface, ok := saveMap["redirect_query_params"]; ok {
+					if params, ok := paramsInterface.(map[string]string); ok {
+						saveSpec.RedirectQueryParams = params
+					} else if paramsMap, ok := paramsInterface.(map[string]interface{}); ok {
+						saveSpec.RedirectQueryParams = make(map[string]string)
+						for k, v := range paramsMap {
+							if str, ok := v.(string); ok {
+								saveSpec.RedirectQueryParams[k] = str
+							}
+						}
+					}
 				}
 			}
 		}
