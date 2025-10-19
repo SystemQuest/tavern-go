@@ -81,11 +81,11 @@ func TestIntegration_MultiStageAuth(t *testing.T) {
 				},
 				Response: &schema.ResponseSpec{
 					StatusCode: 200,
-					Save: &schema.SaveSpec{
+					Save: schema.NewRegularSave(&schema.SaveSpec{
 						Body: map[string]string{
 							"token": "token",
 						},
-					},
+					}),
 				},
 			},
 			{
@@ -154,11 +154,11 @@ func TestIntegration_VariableChaining(t *testing.T) {
 				},
 				Response: &schema.ResponseSpec{
 					StatusCode: 200,
-					Save: &schema.SaveSpec{
+					Save: schema.NewRegularSave(&schema.SaveSpec{
 						Body: map[string]string{
 							"user_id": "user_id",
 						},
-					},
+					}),
 				},
 			},
 			{
@@ -169,12 +169,12 @@ func TestIntegration_VariableChaining(t *testing.T) {
 				},
 				Response: &schema.ResponseSpec{
 					StatusCode: 200,
-					Save: &schema.SaveSpec{
+					Save: schema.NewRegularSave(&schema.SaveSpec{
 						Body: map[string]string{
 							"user_name":  "name",
 							"user_email": "email",
 						},
-					},
+					}),
 				},
 			},
 			{
@@ -278,12 +278,12 @@ func TestIntegration_ComplexValidation(t *testing.T) {
 					Body: map[string]interface{}{
 						"status": "success",
 					},
-					Save: &schema.SaveSpec{
+					Save: schema.NewRegularSave(&schema.SaveSpec{
 						Body: map[string]string{
 							"first_user_name": "data.users.0.name",
 							"total_count":     "data.total",
 						},
-					},
+					}),
 				},
 			},
 		},

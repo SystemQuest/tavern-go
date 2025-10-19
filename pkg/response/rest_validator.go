@@ -116,136 +116,85 @@ func (v *RestValidator) Verify(resp *http.Response) (map[string]interface{}, err
 		}
 	}
 
-	// Save values
+	// Save values - using type-safe SaveConfig union type
 	if v.spec.Save != nil {
-		var saveSpec *schema.SaveSpec
-		var ok bool
-
-		// Check if Save is a $ext specification
-		if saveMap, ok := v.spec.Save.(map[string]interface{}); ok {
-			if extSpec, hasExt := saveMap["$ext"]; hasExt {
-				// Handle $ext in save
-				extSaved, err := v.saveWithExt(extSpec, resp)
-				if err != nil {
-					v.addError(fmt.Sprintf("failed to save with extension: %v", err))
-				} else {
-					for k, v := range extSaved {
-						saved[k] = v
-					}
+		// Handle extension-based save ($ext)
+		if v.spec.Save.IsExtension() {
+			ext := v.spec.Save.GetExtension()
+			extSaved, err := v.saveWithExtSpec(ext, resp)
+			if err != nil {
+				v.addError(fmt.Sprintf("failed to save with extension: %v", err))
+			} else {
+				for k, v := range extSaved {
+					saved[k] = v
 				}
-				// Skip regular save processing
-				goto skipRegularSave
 			}
+			goto skipRegularSave
 		}
 
-		// Cast to SaveSpec for regular save processing
-		saveSpec, ok = v.spec.Save.(*schema.SaveSpec)
-		if !ok {
-			// Try to convert map to SaveSpec
-			if saveMap, ok := v.spec.Save.(map[string]interface{}); ok {
-				saveSpec = &schema.SaveSpec{}
-				// Convert body - handle both map[string]string and map[string]interface{}
-				if bodyInterface, ok := saveMap["body"]; ok {
-					if body, ok := bodyInterface.(map[string]string); ok {
-						saveSpec.Body = body
-					} else if bodyMap, ok := bodyInterface.(map[string]interface{}); ok {
-						// Convert map[string]interface{} to map[string]string
-						saveSpec.Body = make(map[string]string)
-						for k, v := range bodyMap {
-							if str, ok := v.(string); ok {
-								saveSpec.Body[k] = str
+		// Handle regular save (body, headers, redirect_query_params)
+		if v.spec.Save.IsRegular() {
+			saveSpec := v.spec.Save.GetSpec()
+			if saveSpec != nil {
+				// Save from body
+				if saveSpec.Body != nil {
+					// Parse body as generic interface for array support
+					var bodyData interface{}
+					if len(bodyBytes) > 0 {
+						err = json.Unmarshal(bodyBytes, &bodyData)
+						if err != nil {
+							v.addError(fmt.Sprintf("failed to parse body for saving: %v", err))
+						} else {
+							for saveName, jsonPath := range saveSpec.Body {
+								val, err := v.extractValue(bodyData, jsonPath)
+								if err != nil {
+									v.addError(fmt.Sprintf("failed to save %s from body: %v", saveName, err))
+								} else {
+									saved[saveName] = val
+								}
 							}
 						}
 					}
 				}
-				// Convert headers - handle both map[string]string and map[string]interface{}
-				if headersInterface, ok := saveMap["headers"]; ok {
-					if headers, ok := headersInterface.(map[string]string); ok {
-						saveSpec.Headers = headers
-					} else if headersMap, ok := headersInterface.(map[string]interface{}); ok {
-						saveSpec.Headers = make(map[string]string)
-						for k, v := range headersMap {
-							if str, ok := v.(string); ok {
-								saveSpec.Headers[k] = str
-							}
-						}
-					}
-				}
-				// Convert redirect_query_params - handle both map[string]string and map[string]interface{}
-				if paramsInterface, ok := saveMap["redirect_query_params"]; ok {
-					if params, ok := paramsInterface.(map[string]string); ok {
-						saveSpec.RedirectQueryParams = params
-					} else if paramsMap, ok := paramsInterface.(map[string]interface{}); ok {
-						saveSpec.RedirectQueryParams = make(map[string]string)
-						for k, v := range paramsMap {
-							if str, ok := v.(string); ok {
-								saveSpec.RedirectQueryParams[k] = str
-							}
-						}
-					}
-				}
-			}
-		}
 
-		if saveSpec != nil {
-			// Save from body
-			if saveSpec.Body != nil {
-				// Parse body as generic interface for array support
-				var bodyData interface{}
-				if len(bodyBytes) > 0 {
-					err = json.Unmarshal(bodyBytes, &bodyData)
-					if err != nil {
-						v.addError(fmt.Sprintf("failed to parse body for saving: %v", err))
-					} else {
-						for saveName, jsonPath := range saveSpec.Body {
-							val, err := v.extractValue(bodyData, jsonPath)
-							if err != nil {
-								v.addError(fmt.Sprintf("failed to save %s from body: %v", saveName, err))
-							} else {
-								saved[saveName] = val
-							}
+				// Save from headers
+				if saveSpec.Headers != nil {
+					for saveName, headerName := range saveSpec.Headers {
+						val := resp.Header.Get(headerName)
+						if val == "" {
+							v.addError(fmt.Sprintf("header %s not found for saving as %s", headerName, saveName))
+						} else {
+							saved[saveName] = val
 						}
 					}
 				}
-			}
 
-			// Save from headers
-			if saveSpec.Headers != nil {
-				for saveName, headerName := range saveSpec.Headers {
-					val := resp.Header.Get(headerName)
-					if val == "" {
-						v.addError(fmt.Sprintf("header %s not found for saving as %s", headerName, saveName))
+				// Save from redirect query params
+				if saveSpec.RedirectQueryParams != nil {
+					location := resp.Header.Get("Location")
+					if location == "" {
+						v.addError("no Location header for redirect_query_params")
 					} else {
-						saved[saveName] = val
-					}
-				}
-			}
-
-			// Save from redirect query params
-			if saveSpec.RedirectQueryParams != nil {
-				location := resp.Header.Get("Location")
-				if location == "" {
-					v.addError("no Location header for redirect_query_params")
-				} else {
-					parsedURL, err := url.Parse(location)
-					if err != nil {
-						v.addError(fmt.Sprintf("failed to parse redirect URL: %v", err))
-					} else {
-						queryParams := parsedURL.Query()
-						for saveName, paramName := range saveSpec.RedirectQueryParams {
-							val := queryParams.Get(paramName)
-							if val == "" {
-								v.addError(fmt.Sprintf("query param %s not found in redirect URL", paramName))
-							} else {
-								saved[saveName] = val
+						parsedURL, err := url.Parse(location)
+						if err != nil {
+							v.addError(fmt.Sprintf("failed to parse redirect URL: %v", err))
+						} else {
+							queryParams := parsedURL.Query()
+							for saveName, paramName := range saveSpec.RedirectQueryParams {
+								val := queryParams.Get(paramName)
+								if val == "" {
+									v.addError(fmt.Sprintf("query param %s not found in redirect URL", paramName))
+								} else {
+									saved[saveName] = val
+								}
 							}
 						}
 					}
 				}
 			}
 		}
-	skipRegularSave:
 	}
+skipRegularSave:
 
 	// Check for errors
 	if len(v.errors) > 0 {
@@ -255,7 +204,39 @@ func (v *RestValidator) Verify(resp *http.Response) (map[string]interface{}, err
 	return saved, nil
 }
 
-// saveWithExt saves data using a custom extension function
+// saveWithExtSpec saves data using a custom extension function (type-safe version)
+func (v *RestValidator) saveWithExtSpec(ext *schema.ExtSpec, resp *http.Response) (map[string]interface{}, error) {
+	if ext == nil {
+		return nil, fmt.Errorf("ext spec cannot be nil")
+	}
+
+	functionName := ext.Function
+	if functionName == "" {
+		return nil, fmt.Errorf("ext.function cannot be empty")
+	}
+
+	// Get extra_kwargs (may be nil for parameterless functions)
+	extraKwargs := ext.ExtraKwargs
+	if extraKwargs == nil {
+		extraKwargs = make(map[string]interface{})
+	}
+
+	// Try parameterized saver first (for functions with parameters)
+	paramSaver, err := extension.GetParameterizedSaver(functionName)
+	if err == nil {
+		return paramSaver(resp, extraKwargs)
+	}
+
+	// Fall back to regular saver (for backward compatibility)
+	saver, err := extension.GetSaver(functionName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get saver '%s': %w", functionName, err)
+	}
+
+	return saver(resp)
+}
+
+// saveWithExt saves data using a custom extension function (legacy interface{} version for backward compatibility)
 func (v *RestValidator) saveWithExt(extSpec interface{}, resp *http.Response) (map[string]interface{}, error) {
 	extMap, ok := extSpec.(map[string]interface{})
 	if !ok {

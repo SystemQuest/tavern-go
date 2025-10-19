@@ -70,11 +70,11 @@ func CreateAuthTest(url, token string) *schema.TestSpec {
 				},
 				Response: &schema.ResponseSpec{
 					StatusCode: 200,
-					Save: &schema.SaveSpec{
+					Save: schema.NewRegularSave(&schema.SaveSpec{
 						Body: map[string]string{
 							"token": "access_token",
 						},
-					},
+					}),
 				},
 			},
 			{
@@ -110,11 +110,11 @@ func CreateTestWithSave(url string, saveKey string, savePath string) *schema.Tes
 				},
 				Response: &schema.ResponseSpec{
 					StatusCode: 200,
-					Save: &schema.SaveSpec{
+					Save: schema.NewRegularSave(&schema.SaveSpec{
 						Body: map[string]string{
 							saveKey: savePath,
 						},
-					},
+					}),
 				},
 			},
 		},

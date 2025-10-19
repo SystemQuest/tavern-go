@@ -56,9 +56,10 @@ func (v *ShellValidator) Verify(response interface{}) (map[string]interface{}, e
 	}
 
 	// Save values if specified
-	if v.spec.Save != nil {
-		// Cast to SaveSpec
-		if saveSpec, ok := v.spec.Save.(*schema.SaveSpec); ok {
+	if v.spec.Save != nil && v.spec.Save.IsRegular() {
+		// Get the regular SaveSpec
+		saveSpec := v.spec.Save.GetSpec()
+		if saveSpec != nil {
 			if saveSpec.Body != nil {
 				for varName, pattern := range saveSpec.Body {
 					if value := v.extractFromOutput(shellResp.Stdout, pattern); value != "" {

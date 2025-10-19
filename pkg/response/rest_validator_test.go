@@ -39,11 +39,11 @@ func createMockResponse(statusCode int, headers map[string]string, body interfac
 func TestValidator_SaveBodySimple(t *testing.T) {
 	spec := schema.ResponseSpec{
 		StatusCode: 200,
-		Save: &schema.SaveSpec{
+		Save: schema.NewRegularSave(&schema.SaveSpec{
 			Body: map[string]string{
 				"test_code": "code",
 			},
-		},
+		}),
 	}
 
 	validator := NewRestValidator("test", spec, &Config{Variables: map[string]interface{}{}})
@@ -65,11 +65,11 @@ func TestValidator_SaveBodySimple(t *testing.T) {
 func TestValidator_SaveBodyNested(t *testing.T) {
 	spec := schema.ResponseSpec{
 		StatusCode: 200,
-		Save: &schema.SaveSpec{
+		Save: schema.NewRegularSave(&schema.SaveSpec{
 			Body: map[string]string{
 				"test_nested": "user.profile.name",
 			},
-		},
+		}),
 	}
 
 	validator := NewRestValidator("test", spec, &Config{Variables: map[string]interface{}{}})
@@ -95,12 +95,12 @@ func TestValidator_SaveBodyNested(t *testing.T) {
 func TestValidator_SaveBodyArray(t *testing.T) {
 	spec := schema.ResponseSpec{
 		StatusCode: 200,
-		Save: &schema.SaveSpec{
+		Save: schema.NewRegularSave(&schema.SaveSpec{
 			Body: map[string]string{
 				"first_item": "items.0.name",
 				"second_id":  "items.1.id",
 			},
-		},
+		}),
 	}
 
 	validator := NewRestValidator("test", spec, &Config{Variables: map[string]interface{}{}})
@@ -125,12 +125,12 @@ func TestValidator_SaveBodyArray(t *testing.T) {
 func TestValidator_SaveBodyFromArray(t *testing.T) {
 	spec := schema.ResponseSpec{
 		StatusCode: 200,
-		Save: &schema.SaveSpec{
+		Save: schema.NewRegularSave(&schema.SaveSpec{
 			Body: map[string]string{
 				"first_user_id":   "0.id",
 				"first_user_name": "0.name",
 			},
-		},
+		}),
 	}
 
 	validator := NewRestValidator("test", spec, &Config{Variables: map[string]interface{}{}})
@@ -154,11 +154,11 @@ func TestValidator_SaveBodyFromArray(t *testing.T) {
 func TestValidator_SaveHeader(t *testing.T) {
 	spec := schema.ResponseSpec{
 		StatusCode: 200,
-		Save: &schema.SaveSpec{
+		Save: schema.NewRegularSave(&schema.SaveSpec{
 			Headers: map[string]string{
 				"next_location": "Location",
 			},
-		},
+		}),
 	}
 
 	validator := NewRestValidator("test", spec, &Config{Variables: map[string]interface{}{}})
@@ -180,12 +180,12 @@ func TestValidator_SaveHeader(t *testing.T) {
 func TestValidator_SaveRedirectQueryParam(t *testing.T) {
 	spec := schema.ResponseSpec{
 		StatusCode: 302,
-		Save: &schema.SaveSpec{
+		Save: schema.NewRegularSave(&schema.SaveSpec{
 			RedirectQueryParams: map[string]string{
 				"test_search": "search",
 				"test_page":   "page",
 			},
-		},
+		}),
 	}
 
 	validator := NewRestValidator("test", spec, &Config{Variables: map[string]interface{}{}})
@@ -207,11 +207,11 @@ func TestValidator_SaveRedirectQueryParam(t *testing.T) {
 func TestValidator_SaveNonExistentKey(t *testing.T) {
 	spec := schema.ResponseSpec{
 		StatusCode: 200,
-		Save: &schema.SaveSpec{
+		Save: schema.NewRegularSave(&schema.SaveSpec{
 			Body: map[string]string{
 				"missing": "does.not.exist",
 			},
-		},
+		}),
 	}
 
 	validator := NewRestValidator("test", spec, &Config{Variables: map[string]interface{}{}})
@@ -395,11 +395,11 @@ func TestValidator_ValidateAndSave(t *testing.T) {
 			"status": "success",
 			"code":   "abc123",
 		},
-		Save: &schema.SaveSpec{
+		Save: schema.NewRegularSave(&schema.SaveSpec{
 			Body: map[string]string{
 				"saved_code": "code",
 			},
-		},
+		}),
 	}
 
 	validator := NewRestValidator("test", spec, &Config{Variables: map[string]interface{}{}})
