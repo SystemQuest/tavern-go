@@ -226,7 +226,7 @@ func TestExecutor_ExecuteSaver_WithRealHTTPResponse(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(200)
-		w.Write([]byte(`{"message": "test"}`))
+		_, _ = w.Write([]byte(`{"message": "test"}`))
 	}))
 	defer server.Close()
 
