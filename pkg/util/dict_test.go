@@ -49,6 +49,95 @@ func TestFormatKeys(t *testing.T) {
 			expected: nil,
 			wantErr:  true,
 		},
+		{
+			name: "array with variables",
+			input: []interface{}{
+				"{name}",
+				"{age}",
+				"static",
+			},
+			expected: []interface{}{
+				"John",
+				"30",
+				"static",
+			},
+			wantErr: false,
+		},
+		{
+			name: "array with repeated variables",
+			input: []interface{}{
+				"{name}",
+				"{name}",
+				"{name}",
+			},
+			expected: []interface{}{
+				"John",
+				"John",
+				"John",
+			},
+			wantErr: false,
+		},
+		{
+			name: "nested array in map",
+			input: map[string]interface{}{
+				"users": []interface{}{
+					"{name}",
+					"Alice",
+				},
+				"ages": []interface{}{
+					"{age}",
+					25,
+				},
+			},
+			expected: map[string]interface{}{
+				"users": []interface{}{
+					"John",
+					"Alice",
+				},
+				"ages": []interface{}{
+					"30",
+					25,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "array with maps containing variables",
+			input: []interface{}{
+				map[string]interface{}{
+					"name": "{name}",
+					"age":  "{age}",
+				},
+				map[string]interface{}{
+					"greeting": "Hello {name}",
+				},
+			},
+			expected: []interface{}{
+				map[string]interface{}{
+					"name": "John",
+					"age":  "30",
+				},
+				map[string]interface{}{
+					"greeting": "Hello John",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name:     "empty array",
+			input:    []interface{}{},
+			expected: []interface{}{},
+			wantErr:  false,
+		},
+		{
+			name: "array with missing variable",
+			input: []interface{}{
+				"{name}",
+				"{missing}",
+			},
+			expected: nil,
+			wantErr:  true,
+		},
 	}
 
 	for _, tt := range tests {
