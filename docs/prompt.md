@@ -3,3 +3,8 @@
 
 ## 核对
 核对：tavern-go是否已经同步了tavern-py的commit: a4ae88f的变更
+
+Last:
+https://github.com/taverntesting/tavern/commits/master/?before=bf1fe6c08c389fd475ac9608bec514342bb72d7f+966
+
+Add variables support for arrays (#43)
