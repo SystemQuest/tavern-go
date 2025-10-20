@@ -1,0 +1,22 @@
+---
+# Test demonstrating multiple global config files
+# This test uses base + staging configs
+test_name: Test with staging configuration
+
+stages:
+  - name: verify_config_merge
+    request:
+      # base_url comes from staging.yaml (overrides base.yaml)
+      url: "{base_url}/api/{api_version}/status"
+      method: GET
+      headers:
+        # api_key comes from staging.yaml
+        Authorization: "Bearer {api_key}"
+        # User-Agent comes from base.yaml (not overridden)
+        User-Agent: "{common_headers.User-Agent}"
+    response:
+      status_code: 200
+      json:
+        environment: "{environment}"  # Should be "staging"
+        timeout: !int "{timeout}"      # Should be 30 (from base.yaml)
+        retry_count: !int "{retry_count}"  # Should be 3 (from base.yaml)

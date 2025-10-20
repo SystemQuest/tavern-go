@@ -1,0 +1,4 @@
+variables:
+  base_url: "https://staging.api.example.com"
+  api_key: "staging_api_key_12345"
+  environment: "staging"

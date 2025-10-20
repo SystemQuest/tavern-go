@@ -261,6 +261,43 @@ func (r *Runner) LoadGlobalConfig(filename string) error {
 	return nil
 }
 
+// LoadGlobalConfigs loads multiple global configuration files and deep merges them
+// Aligned with tavern-py commit 76569fd: load_global_config()
+// Files are merged in order, with later files overwriting earlier ones
+func (r *Runner) LoadGlobalConfigs(filenames []string) error {
+	if len(filenames) == 0 {
+		return nil
+	}
+
+	r.logger.Infof("Loading %d global config file(s)", len(filenames))
+
+	mergedConfig := make(map[string]interface{})
+
+	// Load and merge each config file
+	for _, filename := range filenames {
+		r.logger.Infof("Loading global config from %s", filename)
+
+		config, err := r.loader.LoadGlobalConfig(filename)
+		if err != nil {
+			return fmt.Errorf("failed to load global config from %s: %w", filename, err)
+		}
+
+		// Deep merge into the accumulated config
+		mergedConfig = util.DeepMerge(mergedConfig, config)
+	}
+
+	r.config.GlobalConfig = mergedConfig
+
+	// Merge variables from the final merged config
+	if vars, ok := mergedConfig["variables"].(map[string]interface{}); ok {
+		for k, v := range vars {
+			r.config.Variables[k] = v
+		}
+	}
+
+	return nil
+}
+
 // SetVariable sets a variable in the runner config
 func (r *Runner) SetVariable(key string, value interface{}) {
 	r.config.Variables[key] = value

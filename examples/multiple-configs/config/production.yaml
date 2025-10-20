@@ -1,0 +1,9 @@
+variables:
+  base_url: "https://api.example.com"
+  api_key: "prod_api_key_67890"
+  environment: "production"
+  timeout: 60
+  retry_count: 5
+
+common_headers:
+  User-Agent: "Tavern-Go-Production"

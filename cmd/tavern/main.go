@@ -12,10 +12,10 @@ import (
 
 var (
 	// Flags
-	globalCfg string
-	verbose   bool
-	debug     bool
-	validate  bool
+	globalCfgs []string // Support multiple global config files (aligned with tavern-py commit 76569fd)
+	verbose    bool
+	debug      bool
+	validate   bool
 )
 
 func main() {
@@ -43,7 +43,7 @@ Visit https://systemquest.dev for more information.`,
 }
 
 func init() {
-	rootCmd.Flags().StringVarP(&globalCfg, "global-cfg", "c", "", "Global configuration file")
+	rootCmd.Flags().StringSliceVarP(&globalCfgs, "global-cfg", "c", []string{}, "One or more global configuration files (aligned with tavern-py commit 76569fd)")
 	rootCmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "Verbose output")
 	rootCmd.Flags().BoolVarP(&debug, "debug", "d", false, "Debug mode")
 	rootCmd.Flags().BoolVar(&validate, "validate", false, "Validate test files without running")
@@ -66,9 +66,9 @@ func runTests(cmd *cobra.Command, args []string) error {
 	}
 
 	// Load global config if specified
-	if globalCfg != "" {
-		if err := runner.LoadGlobalConfig(globalCfg); err != nil {
-			return fmt.Errorf("failed to load global config: %w", err)
+	if len(globalCfgs) > 0 {
+		if err := runner.LoadGlobalConfigs(globalCfgs); err != nil {
+			return fmt.Errorf("failed to load global configs: %w", err)
 		}
 	}
 
