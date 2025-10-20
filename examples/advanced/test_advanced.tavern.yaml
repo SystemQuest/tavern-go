@@ -116,7 +116,7 @@ stages:
       status_code: 404
 
 ---
-# Test 4: SSL certificate verification
+# Test 5: SSL certificate verification
 test_name: Test SSL certificate verification with verify keyword
 
 stages:
