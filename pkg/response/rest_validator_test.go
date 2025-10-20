@@ -631,6 +631,43 @@ func TestValidator_ValidateArrayTypeMismatch(t *testing.T) {
 	assert.Contains(t, err.Error(), "expected array")
 }
 
+// TestValidator_ValidateDictTypeMismatch tests error when expected object but got array
+func TestValidator_ValidateDictTypeMismatch(t *testing.T) {
+	spec := schema.ResponseSpec{
+		StatusCode: 200,
+		Body:       map[string]interface{}{"key": "value"},
+	}
+
+	validator := NewRestValidator("test", spec, &Config{Variables: map[string]interface{}{}})
+
+	body := []interface{}{"a", "b", "c"}
+
+	resp := createMockResponse(200, map[string]string{"Content-Type": "application/json"}, body)
+
+	_, err := validator.Verify(resp)
+
+	assert.Error(t, err, "Should fail when expected object but got array")
+}
+
+// TestValidator_ValidateArrayIndexOutOfRange tests error when expected array has more elements than actual
+func TestValidator_ValidateArrayIndexOutOfRange(t *testing.T) {
+	spec := schema.ResponseSpec{
+		StatusCode: 200,
+		Body:       []interface{}{"a", 1, "b", "c"}, // Expect 4 elements
+	}
+
+	validator := NewRestValidator("test", spec, &Config{Variables: map[string]interface{}{}})
+
+	body := []interface{}{"a", 1, "b"} // Only 3 elements returned
+
+	resp := createMockResponse(200, map[string]string{"Content-Type": "application/json"}, body)
+
+	_, err := validator.Verify(resp)
+
+	assert.Error(t, err, "Should fail when array is shorter than expected")
+	assert.Contains(t, err.Error(), "index out of range")
+}
+
 // TestValidator_ValidateArrayValueMismatch tests error when array values don't match
 func TestValidator_ValidateArrayValueMismatch(t *testing.T) {
 	spec := schema.ResponseSpec{
