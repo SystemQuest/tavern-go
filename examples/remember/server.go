@@ -10,14 +10,9 @@ import (
 	"net/http"
 	"strings"
 	"time"
-
-	"github.com/gorilla/sessions"
 )
 
 var (
-	// Session store with secret key
-	store *sessions.CookieStore
-
 	// User database
 	users = map[string]User{
 		"mark": {
@@ -27,18 +22,6 @@ var (
 		},
 	}
 )
-
-func init() {
-	store = sessions.NewCookieStore([]byte("secret"))
-	// Set MaxAge to 0 to make it a session cookie (no Expires/Max-Age)
-	store.Options = &sessions.Options{
-		Path:     "/",
-		MaxAge:   0, // Session cookie - cleared when browser closes
-		HttpOnly: true,
-		Secure:   false,
-		SameSite: http.SameSiteDefaultMode,
-	}
-}
 
 // User represents a user with credentials and data
 type User struct {
@@ -143,10 +126,16 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Set session cookie (session cookie - no Expires)
-	session, _ := store.Get(r, "session")
-	session.Values["user"] = credentials.Username
-	session.Save(r, w)
+	// Set session cookie (session cookie - no Expires/Max-Age)
+	// Using signed token to store username securely
+	sessionToken := serializer.dumps(credentials.Username)
+	http.SetCookie(w, &http.Cookie{
+		Name:     "session",
+		Value:    sessionToken,
+		Path:     "/",
+		HttpOnly: true,
+		// No Expires or MaxAge - this makes it a session cookie
+	})
 
 	// Set remember cookie (persistent cookie - with Expires)
 	rememberToken := serializer.dumps(credentials.Username)
@@ -172,9 +161,10 @@ func regularHandler(w http.ResponseWriter, r *http.Request) {
 	var username string
 
 	// Try session cookie first
-	session, _ := store.Get(r, "session")
-	if user, ok := session.Values["user"].(string); ok {
-		username = user
+	if sessionCookie, err := r.Cookie("session"); err == nil {
+		if user, err := serializer.loads(sessionCookie.Value, 3600); err == nil {
+			username = user
+		}
 	}
 
 	// If no session, try remember cookie
@@ -213,9 +203,15 @@ func protectedHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	session, _ := store.Get(r, "session")
-	username, ok := session.Values["user"].(string)
-	if !ok || username == "" {
+	// Must have session cookie (not remember cookie)
+	sessionCookie, err := r.Cookie("session")
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	username, err := serializer.loads(sessionCookie.Value, 3600)
+	if err != nil || username == "" {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
