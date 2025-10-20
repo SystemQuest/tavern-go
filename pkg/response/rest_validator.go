@@ -39,6 +39,11 @@ func NewRestValidator(name string, spec schema.ResponseSpec, config *Config) *Re
 		}
 	}
 
+	// Warn if status code is not a standard HTTP code
+	if http.StatusText(spec.StatusCode) == "" {
+		logrus.Warnf("Unexpected status code '%d'", spec.StatusCode)
+	}
+
 	return &RestValidator{
 		name:   name,
 		spec:   spec,

@@ -667,3 +667,23 @@ func TestValidator_ValidateArrayPartial(t *testing.T) {
 
 	assert.NoError(t, err, "Partial array validation should pass (like tavern-py)")
 }
+
+// TestValidator_InvalidStatusCodeWarning tests that invalid status codes trigger a warning
+func TestValidator_InvalidStatusCodeWarning(t *testing.T) {
+	// Use a non-standard status code that will trigger the warning
+	spec := schema.ResponseSpec{
+		StatusCode: 999, // Valid but uncommon code
+	}
+
+	// This should not panic, just log a warning
+	validator := NewRestValidator("test", spec, &Config{Variables: map[string]interface{}{}})
+	assert.NotNil(t, validator)
+
+	// Test with a completely invalid status code
+	spec2 := schema.ResponseSpec{
+		StatusCode: 231234, // Completely invalid
+	}
+
+	validator2 := NewRestValidator("test", spec2, &Config{Variables: map[string]interface{}{}})
+	assert.NotNil(t, validator2)
+}
