@@ -210,14 +210,6 @@ func (l *Loader) parseYAML(data string, filename string) ([]*schema.TestSpec, er
 			return nil, fmt.Errorf("failed to decode test spec: %w", err)
 		}
 
-		if err == io.EOF {
-			break
-		}
-
-		if err != nil {
-			return nil, fmt.Errorf("failed to decode YAML: %w", err)
-		}
-
 		// Skip empty documents
 		if test.TestName == "" {
 			l.logger.Warnf("Empty document in input file '%s'", filename)
