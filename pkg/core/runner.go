@@ -138,10 +138,15 @@ func (r *Runner) RunTest(test *schema.TestSpec) error {
 		Jar: jar, // Enable automatic cookie management
 	}
 
+	// Create shared persistent cookies map for clear_session_cookies support
+	// This map is shared across all stages to track persistent cookies
+	sharedPersistentCookies := make(map[string][]*http.Cookie)
+
 	// Initialize test configuration
 	testConfig := &request.Config{
-		Variables:  make(map[string]interface{}),
-		HTTPClient: sharedHTTPClient, // Share HTTP client across all stages
+		Variables:         make(map[string]interface{}),
+		HTTPClient:        sharedHTTPClient,        // Share HTTP client across all stages
+		PersistentCookies: sharedPersistentCookies, // Share persistent cookies tracking
 	}
 
 	// Inject tavern magic variables (aligned with tavern-py commit 1b55d6e)

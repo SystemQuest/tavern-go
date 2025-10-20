@@ -79,6 +79,14 @@
               "verify": {
                 "type": "boolean",
                 "description": "Whether to verify SSL certificates (default: true)"
+              },
+              "meta": {
+                "type": "array",
+                "description": "Meta directives like clear_session_cookies",
+                "uniqueItems": true,
+                "items": {
+                  "type": "string"
+                }
               }
             }
           },

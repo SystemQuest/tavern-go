@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/http/cookiejar"
 	"net/url"
 	"strings"
 	"time"
@@ -22,13 +23,16 @@ type RestClient struct {
 	httpClient  *http.Client
 	config      *Config
 	RequestVars map[string]interface{} // Stores request arguments for access in response validation
+	// persistentCookies stores cookies that have Expires or Max-Age set (persist across browser restarts)
+	persistentCookies map[string][]*http.Cookie
 }
 
 // Config holds request configuration
 type Config struct {
-	Variables  map[string]interface{}
-	Timeout    time.Duration
-	HTTPClient *http.Client // Optional: shared HTTP client for session persistence
+	Variables         map[string]interface{}
+	Timeout           time.Duration
+	HTTPClient        *http.Client              // Optional: shared HTTP client for session persistence
+	PersistentCookies map[string][]*http.Cookie // Optional: shared map for tracking persistent cookies across stages
 }
 
 // NewRestClient creates a new REST API client
@@ -45,9 +49,11 @@ func NewRestClient(config *Config) *RestClient {
 		// Use provided client (for session persistence)
 		client = config.HTTPClient
 	} else {
-		// Create new client
+		// Create new client with cookie jar
+		jar, _ := cookiejar.New(nil)
 		client = &http.Client{
 			Timeout: config.Timeout,
+			Jar:     jar, // Enable cookie jar for session persistence
 			CheckRedirect: func(req *http.Request, via []*http.Request) error {
 				// Don't follow redirects automatically
 				return http.ErrUseLastResponse
@@ -55,14 +61,27 @@ func NewRestClient(config *Config) *RestClient {
 		}
 	}
 
+	// Use shared persistent cookies map if provided, otherwise create new one
+	persistentCookies := config.PersistentCookies
+	if persistentCookies == nil {
+		persistentCookies = make(map[string][]*http.Cookie)
+	}
+
 	return &RestClient{
-		httpClient: client,
-		config:     config,
+		httpClient:        client,
+		config:            config,
+		persistentCookies: persistentCookies,
 	}
 }
 
 // Execute executes an HTTP request
 func (c *RestClient) Execute(spec schema.RequestSpec) (*http.Response, error) {
+	// Process meta operations before request execution
+	// Aligned with tavern-py commit 1dcffc6: support for meta operations like clear_session_cookies
+	if err := c.processMeta(spec.Meta); err != nil {
+		return nil, fmt.Errorf("failed to process meta operations: %w", err)
+	}
+
 	// Format the request spec with variables
 	formattedSpec, err := c.formatRequestSpec(spec)
 	if err != nil {
@@ -96,6 +115,12 @@ func (c *RestClient) Execute(spec schema.RequestSpec) (*http.Response, error) {
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("request failed: %w", err)
+	}
+
+	// Track persistent cookies for clear_session_cookies support
+	// Aligned with tavern-py commit 1dcffc6: preserve persistent cookies when clearing session cookies
+	if c.httpClient.Jar != nil && resp != nil {
+		c.trackPersistentCookies(req.URL, resp)
 	}
 
 	return resp, nil
@@ -368,4 +393,114 @@ func (c *RestClient) buildRequestVars(spec schema.RequestSpec, req *http.Request
 	}
 
 	return requestVars
+}
+
+// processMeta handles meta operations from the request spec
+// Aligned with tavern-py commit 1dcffc6: support for clear_session_cookies
+func (c *RestClient) processMeta(meta []string) error {
+	if len(meta) == 0 {
+		return nil
+	}
+
+	for _, operation := range meta {
+		switch operation {
+		case "clear_session_cookies":
+			// Clear session cookies to simulate browser close
+			// This is useful for testing session vs persistent cookies
+			if err := c.clearSessionCookies(); err != nil {
+				return fmt.Errorf("failed to clear session cookies: %w", err)
+			}
+			logrus.Debug("Cleared session cookies")
+		default:
+			logrus.Warnf("Unknown meta operation: %s", operation)
+		}
+	}
+
+	return nil
+}
+
+// clearSessionCookies removes all session cookies from the HTTP client's cookie jar
+// Session cookies are cookies without an explicit Expires or Max-Age attribute
+// Persistent cookies (with Expires or Max-Age) are preserved
+// Aligned with tavern-py commit 1dcffc6: session.cookies.clear_session_cookies()
+func (c *RestClient) clearSessionCookies() error {
+	if c.httpClient == nil || c.httpClient.Jar == nil {
+		return nil // No cookie jar, nothing to clear
+	}
+
+	// Create a new jar
+	jar, err := cookiejar.New(nil)
+	if err != nil {
+		return err
+	}
+
+	// Restore persistent cookies to the new jar
+	// Persistent cookies are stored by base URL (scheme://host)
+	for baseURLStr, cookies := range c.persistentCookies {
+		// For each cookie, set it with the proper URL based on its Path attribute
+		for _, cookie := range cookies {
+			// Build URL: baseURL + cookie.Path
+			cookieURL := baseURLStr
+			if cookie.Path != "" && cookie.Path != "/" {
+				cookieURL += cookie.Path
+			} else {
+				cookieURL += "/"
+			}
+
+			u, err := url.Parse(cookieURL)
+			if err != nil {
+				continue // Skip invalid URLs
+			}
+
+			// SetCookies expects a slice
+			jar.SetCookies(u, []*http.Cookie{cookie})
+		}
+	}
+
+	c.httpClient.Jar = jar
+	return nil
+}
+
+// trackPersistentCookies tracks cookies with Expires or Max-Age attributes
+// These cookies persist across browser restarts and should be preserved when clearing session cookies
+func (c *RestClient) trackPersistentCookies(reqURL *url.URL, resp *http.Response) {
+	if reqURL == nil || resp == nil {
+		return
+	}
+
+	// Parse cookies from the response headers (not from jar)
+	// The jar doesn't preserve Expires information when returning cookies
+	cookies := resp.Cookies()
+
+	// Filter persistent cookies (those with Expires or Max-Age set)
+	var persistentCookies []*http.Cookie
+	for _, cookie := range cookies {
+		// A cookie is persistent if it has an Expires time set and it's not zero
+		// or if MaxAge > 0
+		if !cookie.Expires.IsZero() || cookie.MaxAge > 0 {
+			persistentCookies = append(persistentCookies, cookie)
+		}
+	}
+
+	// Store persistent cookies using base URL (scheme://host) as key
+	// This allows cookies to be restored for any path on the same host
+	if len(persistentCookies) > 0 {
+		baseURL := fmt.Sprintf("%s://%s", reqURL.Scheme, reqURL.Host)
+		// Merge with existing persistent cookies for this base URL
+		existing := c.persistentCookies[baseURL]
+		// Create a map to deduplicate by cookie name
+		cookieMap := make(map[string]*http.Cookie)
+		for _, c := range existing {
+			cookieMap[c.Name] = c
+		}
+		for _, c := range persistentCookies {
+			cookieMap[c.Name] = c
+		}
+		// Convert back to slice
+		merged := make([]*http.Cookie, 0, len(cookieMap))
+		for _, c := range cookieMap {
+			merged = append(merged, c)
+		}
+		c.persistentCookies[baseURL] = merged
+	}
 }
