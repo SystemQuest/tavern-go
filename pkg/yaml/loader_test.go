@@ -107,3 +107,61 @@ stages:
 	assert.Equal(t, "GET", test.Stages[0].Request.Method)
 	assert.Equal(t, 200, test.Stages[0].Response.StatusCode)
 }
+
+func TestLoader_TypeConvertTags(t *testing.T) {
+	// Create a temporary test file with !int and !float tags
+	tmpDir := t.TempDir()
+	testFile := filepath.Join(tmpDir, "test_typeconvert.yaml")
+
+	content := `---
+test_name: Test type conversion tags
+stages:
+  - name: Test stage
+    request:
+      url: http://example.com
+      method: POST
+      json:
+        number: !int "42"
+        price: !float "19.99"
+    response:
+      status_code: 200
+      body:
+        result: !int "100"
+`
+
+	err := os.WriteFile(testFile, []byte(content), 0644)
+	require.NoError(t, err)
+
+	// Load the test file
+	loader := NewLoader(tmpDir)
+	tests, err := loader.Load(testFile)
+	require.NoError(t, err)
+	require.Len(t, tests, 1)
+
+	test := tests[0]
+	assert.Equal(t, "Test type conversion tags", test.TestName)
+	require.Len(t, test.Stages, 1)
+
+	stage := test.Stages[0]
+	assert.Equal(t, "Test stage", stage.Name)
+
+	// Check JSON body - should have type convert markers
+	jsonBody, ok := stage.Request.JSON.(map[string]interface{})
+	require.True(t, ok, "JSON body should be a map")
+
+	number, hasNumber := jsonBody["number"]
+	require.True(t, hasNumber, "number should exist")
+	assert.Equal(t, "<<INT>>42", number, "!int should be converted to <<INT>> marker")
+
+	price, hasPrice := jsonBody["price"]
+	require.True(t, hasPrice, "price should exist")
+	assert.Equal(t, "<<FLOAT>>19.99", price, "!float should be converted to <<FLOAT>> marker")
+
+	// Check response body
+	respBody, ok := stage.Response.Body.(map[string]interface{})
+	require.True(t, ok, "response body should be a map")
+
+	result, hasResult := respBody["result"]
+	require.True(t, hasResult, "result should exist")
+	assert.Equal(t, "<<INT>>100", result, "!int should be converted to <<INT>> marker")
+}

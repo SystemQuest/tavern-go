@@ -141,7 +141,7 @@ func (l *Loader) indentYAML(content string, spaces int) string {
 	return strings.Join(lines, "\n")
 }
 
-// processCustomTags recursively processes custom YAML tags like !anything
+// processCustomTags recursively processes custom YAML tags like !anything, !int, !float
 func (l *Loader) processCustomTags(node *goyaml.Node) {
 	if node == nil {
 		return
@@ -152,6 +152,24 @@ func (l *Loader) processCustomTags(node *goyaml.Node) {
 		// Replace with a special marker value that will be recognized during validation
 		node.Tag = "!!str"
 		node.Value = "<<ANYTHING>>"
+		node.Kind = goyaml.ScalarNode
+		return
+	}
+
+	// Check for !int tag
+	if node.Tag == "!int" {
+		// Mark as type convert token
+		node.Tag = "!!str"
+		node.Value = "<<INT>>" + node.Value
+		node.Kind = goyaml.ScalarNode
+		return
+	}
+
+	// Check for !float tag
+	if node.Tag == "!float" {
+		// Mark as type convert token
+		node.Tag = "!!str"
+		node.Value = "<<FLOAT>>" + node.Value
 		node.Kind = goyaml.ScalarNode
 		return
 	}

@@ -11,7 +11,12 @@ import (
 func FormatKeys(val interface{}, variables map[string]interface{}) (interface{}, error) {
 	switch v := val.(type) {
 	case string:
-		return formatString(v, variables)
+		// Check for type conversion markers
+		formatted, err := formatString(v, variables)
+		if err != nil {
+			return nil, err
+		}
+		return applyTypeConversion(formatted)
 	case map[string]interface{}:
 		return formatMap(v, variables)
 	case []interface{}:
@@ -94,6 +99,24 @@ func getNestedValue(variables map[string]interface{}, path string) (interface{},
 	}
 
 	return current, true
+}
+
+// applyTypeConversion applies type conversion if the string has a type marker
+func applyTypeConversion(s string) (interface{}, error) {
+	// Check for !int marker
+	if strings.HasPrefix(s, "<<INT>>") {
+		value := strings.TrimPrefix(s, "<<INT>>")
+		return IntConverter(value)
+	}
+
+	// Check for !float marker
+	if strings.HasPrefix(s, "<<FLOAT>>") {
+		value := strings.TrimPrefix(s, "<<FLOAT>>")
+		return FloatConverter(value)
+	}
+
+	// No type conversion needed
+	return s, nil
 }
 
 // formatMap recursively formats a map
