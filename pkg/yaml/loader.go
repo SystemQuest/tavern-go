@@ -141,15 +141,56 @@ func (l *Loader) indentYAML(content string, spaces int) string {
 	return strings.Join(lines, "\n")
 }
 
+// processCustomTags recursively processes custom YAML tags like !anything
+func (l *Loader) processCustomTags(node *goyaml.Node) {
+	if node == nil {
+		return
+	}
+
+	// Check for !anything tag
+	if node.Tag == "!anything" {
+		// Replace with a special marker value that will be recognized during validation
+		node.Tag = "!!str"
+		node.Value = "<<ANYTHING>>"
+		node.Kind = goyaml.ScalarNode
+		return
+	}
+
+	// Recursively process child nodes
+	for _, child := range node.Content {
+		l.processCustomTags(child)
+	}
+}
+
 // parseYAML parses YAML content into test specifications
 func (l *Loader) parseYAML(data string, filename string) ([]*schema.TestSpec, error) {
 	var tests []*schema.TestSpec
 
 	decoder := goyaml.NewDecoder(strings.NewReader(data))
 
+	// Register custom tag resolver for !anything
+	decoder.KnownFields(false)
+
 	for {
+		var node goyaml.Node
+		err := decoder.Decode(&node)
+
+		if err == io.EOF {
+			break
+		}
+
+		if err != nil {
+			return nil, fmt.Errorf("failed to decode YAML: %w", err)
+		}
+
+		// Process custom tags like !anything
+		l.processCustomTags(&node)
+
 		var test schema.TestSpec
-		err := decoder.Decode(&test)
+		err = node.Decode(&test)
+		if err != nil {
+			return nil, fmt.Errorf("failed to decode test spec: %w", err)
+		}
 
 		if err == io.EOF {
 			break

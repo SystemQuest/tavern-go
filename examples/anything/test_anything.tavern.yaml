@@ -1,0 +1,45 @@
+---
+test_name: Test !anything marker for dynamic values
+
+stages:
+  - name: Test user endpoint with dynamic fields
+    request:
+      url: http://localhost:5001/api/user
+      method: GET
+    response:
+      status_code: 200
+      body:
+        user.id: !anything         # UUID is dynamic
+        user.name: "John Doe"      # Name is fixed
+        user.email: "john@example.com"  # Email is fixed
+        user.created_at: !anything # Timestamp is dynamic
+
+  - name: Test array with mixed dynamic and fixed values
+    request:
+      url: http://localhost:5001/api/items
+      method: GET
+    response:
+      status_code: 200
+      body:
+        items:
+          - !anything              # First item (timestamp) is dynamic
+          - "fixed-value"          # Second item is fixed
+          - !anything              # Third item (UUID) is dynamic
+          - type: "nested"         # Fourth item is fixed nested object
+            data: "constant"
+        count: 4
+
+  - name: Test nested data with selective !anything
+    request:
+      url: http://localhost:5001/api/nested
+      method: GET
+    response:
+      status_code: 200
+      body:
+        user.id: !anything              # Dynamic UUID
+        user.name: "Alice"              # Fixed name
+        user.profile.age: !anything     # Dynamic age
+        user.profile.city: "New York"   # Fixed city
+        user.profile.lastLogin: !anything  # Dynamic timestamp
+        metadata.version: "1.0.0"       # Fixed version
+        metadata.requestId: !anything   # Dynamic request ID

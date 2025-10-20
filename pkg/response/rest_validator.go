@@ -294,6 +294,23 @@ func (v *RestValidator) validateBlock(blockName string, actual interface{}, expe
 			continue
 		}
 
+		// Check for !anything marker - accept any value
+		if expectedStr, ok := expectedVal.(string); ok && expectedStr == "<<ANYTHING>>" {
+			continue
+		}
+
+		// If expected is an array, use validateList for element-by-element comparison
+		if expectedList, ok := expectedVal.([]interface{}); ok {
+			v.validateList(fmt.Sprintf("%s.%s", blockName, key), actualVal, expectedList)
+			continue
+		}
+
+		// If expected is a map, recursively validate
+		if expectedMap, ok := expectedVal.(map[string]interface{}); ok {
+			v.validateBlock(fmt.Sprintf("%s.%s", blockName, key), actualVal, expectedMap)
+			continue
+		}
+
 		// Compare values with type conversion for numbers
 		if !compareValues(actualVal, expectedVal) {
 			v.addError(fmt.Sprintf("%s.%s: expected '%v' (type: %T), got '%v' (type: %T)",
@@ -330,6 +347,16 @@ func (v *RestValidator) validateList(blockName string, actual interface{}, expec
 		case []interface{}:
 			// Nested array: recursive call
 			v.validateList(indexName, actualVal, exp)
+		case string:
+			// Check for !anything marker
+			if exp == "<<ANYTHING>>" {
+				continue
+			}
+			// Primitive value: direct comparison
+			if !compareValues(actualVal, exp) {
+				v.addError(fmt.Sprintf("%s: expected '%v' (type: %T), got '%v' (type: %T)",
+					indexName, exp, exp, actualVal, actualVal))
+			}
 		default:
 			// Primitive value: direct comparison
 			if !compareValues(actualVal, exp) {
