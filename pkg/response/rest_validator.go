@@ -296,6 +296,7 @@ func (v *RestValidator) validateBlock(blockName string, actual interface{}, expe
 
 		// Check for !anything marker - accept any value
 		if expectedStr, ok := expectedVal.(string); ok && expectedStr == "<<ANYTHING>>" {
+			v.logger.Debugf("Key %s.%s: actual value = '%v' - matches !anything", blockName, key, actualVal)
 			continue
 		}
 
@@ -350,6 +351,7 @@ func (v *RestValidator) validateList(blockName string, actual interface{}, expec
 		case string:
 			// Check for !anything marker
 			if exp == "<<ANYTHING>>" {
+				v.logger.Debugf("%s: actual value = '%v' - matches !anything", indexName, actualVal)
 				continue
 			}
 			// Primitive value: direct comparison
