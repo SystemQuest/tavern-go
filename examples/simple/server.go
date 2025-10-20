@@ -55,7 +55,7 @@ func doubleHandler(w http.ResponseWriter, r *http.Request) {
 	// Calculate and return the double
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(DoubleResponse{Double: num * 2})
+	_ = json.NewEncoder(w).Encode(DoubleResponse{Double: num * 2})
 }
 
 // convertToInt converts various types to integer
@@ -80,7 +80,7 @@ func convertToInt(value interface{}) (int, error) {
 func sendError(w http.ResponseWriter, message string, statusCode int) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
-	json.NewEncoder(w).Encode(ErrorResponse{Error: message})
+	_ = json.NewEncoder(w).Encode(ErrorResponse{Error: message})
 }
 
 func main() {

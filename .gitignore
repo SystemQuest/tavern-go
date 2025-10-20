@@ -6,6 +6,10 @@ tavern
 *.so
 *.dylib
 
+# Example server binaries
+examples/*/server
+examples/*/*/server
+
 # Test binary, built with `go test -c`
 *.test
 

@@ -206,7 +206,7 @@ func TestExecutor_ExecuteSaver_WithRealHTTPResponse(t *testing.T) {
 		// Read body (note: in real usage, be careful about reading body multiple times)
 		var body []byte
 		if resp.Body != nil {
-			defer resp.Body.Close()
+			defer func() { _ = resp.Body.Close() }()
 			// For this test, we'll just check if body is readable
 		}
 		return map[string]interface{}{

@@ -112,9 +112,10 @@ func (l *Loader) getIndent(data, match string) int {
 	// Count spaces
 	indent := 0
 	for i := lineStart; i < idx; i++ {
-		if data[i] == ' ' {
+		switch data[i] {
+		case ' ':
 			indent++
-		} else if data[i] == '\t' {
+		case '\t':
 			indent += 4
 		}
 	}

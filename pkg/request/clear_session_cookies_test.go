@@ -33,7 +33,7 @@ func TestClearSessionCookies(t *testing.T) {
 				Expires: time.Now().Add(24 * time.Hour),
 			})
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]string{"status": "logged_in"})
+			_ = json.NewEncoder(w).Encode(map[string]string{"status": "logged_in"})
 
 		case "/data":
 			// Return cookies received in request
@@ -43,7 +43,7 @@ func TestClearSessionCookies(t *testing.T) {
 				cookieNames[i] = c.Name
 			}
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"cookies": cookieNames,
 			})
 		}
@@ -64,7 +64,7 @@ func TestClearSessionCookies(t *testing.T) {
 	loginResp, err := client.Execute(loginSpec)
 	require.NoError(t, err)
 	require.NotNil(t, loginResp)
-	loginResp.Body.Close()
+	_ = loginResp.Body.Close()
 
 	// Step 2: Verify both cookies are present
 	checkSpec1 := schema.RequestSpec{
@@ -75,7 +75,7 @@ func TestClearSessionCookies(t *testing.T) {
 	checkResp1, err := client.Execute(checkSpec1)
 	require.NoError(t, err)
 	require.NotNil(t, checkResp1)
-	defer checkResp1.Body.Close()
+	defer func() { _ = checkResp1.Body.Close() }()
 
 	var data1 map[string]interface{}
 	err = json.NewDecoder(checkResp1.Body).Decode(&data1)
@@ -95,7 +95,7 @@ func TestClearSessionCookies(t *testing.T) {
 	clearResp, err := client.Execute(clearSpec)
 	require.NoError(t, err)
 	require.NotNil(t, clearResp)
-	defer clearResp.Body.Close()
+	defer func() { _ = clearResp.Body.Close() }()
 
 	var data2 map[string]interface{}
 	err = json.NewDecoder(clearResp.Body).Decode(&data2)
@@ -116,7 +116,7 @@ func TestClearSessionCookies(t *testing.T) {
 func TestClearSessionCookiesNoCookies(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
+		_ = json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
 	}))
 	defer server.Close()
 
@@ -133,7 +133,7 @@ func TestClearSessionCookiesNoCookies(t *testing.T) {
 	resp, err := client.Execute(spec)
 	require.NoError(t, err)
 	require.NotNil(t, resp)
-	resp.Body.Close()
+	_ = resp.Body.Close()
 
 	// Should not error when no cookies exist
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
@@ -160,7 +160,7 @@ func TestClearSessionCookiesOnlySession(t *testing.T) {
 		case "/check":
 			cookies := r.Cookies()
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]int{
+			_ = json.NewEncoder(w).Encode(map[string]int{
 				"count": len(cookies),
 			})
 		}
@@ -178,7 +178,7 @@ func TestClearSessionCookiesOnlySession(t *testing.T) {
 	}
 	setResp, err := client.Execute(setSpec)
 	require.NoError(t, err)
-	setResp.Body.Close()
+	_ = setResp.Body.Close()
 
 	// Clear session cookies
 	clearSpec := schema.RequestSpec{
@@ -188,7 +188,7 @@ func TestClearSessionCookiesOnlySession(t *testing.T) {
 	}
 	checkResp, err := client.Execute(clearSpec)
 	require.NoError(t, err)
-	defer checkResp.Body.Close()
+	defer func() { _ = checkResp.Body.Close() }()
 
 	var data map[string]int
 	err = json.NewDecoder(checkResp.Body).Decode(&data)

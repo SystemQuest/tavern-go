@@ -76,7 +76,9 @@ func (ts *TokenSerializer) loads(token string, maxAge int64) (string, error) {
 
 	// Check timestamp
 	var ts64 int64
-	fmt.Sscanf(timestamp, "%d", &ts64)
+	if _, err := fmt.Sscanf(timestamp, "%d", &ts64); err != nil {
+		return "", fmt.Errorf("invalid timestamp: %w", err)
+	}
 	if time.Now().Unix()-ts64 > maxAge {
 		return "", fmt.Errorf("token expired")
 	}
@@ -192,7 +194,7 @@ func regularHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
+	_ = json.NewEncoder(w).Encode(response)
 }
 
 // protectedHandler handles GET /protected
@@ -227,5 +229,5 @@ func protectedHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
+	_ = json.NewEncoder(w).Encode(response)
 }
