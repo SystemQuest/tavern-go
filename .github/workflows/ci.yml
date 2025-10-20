@@ -47,6 +47,44 @@ jobs:
           make docker-test
           make docker-down
 
+  cli-integration-test:
+    name: CLI Integration Test
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        example:
+          - name: simple
+            file: test_server.tavern.yaml
+          - name: remember
+            file: test_server.tavern.yaml
+          - name: regex
+            file: test_server.tavern.yaml
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+          cache: true
+      
+      - name: Build tavern CLI
+        run: make build
+      
+      - name: Start test server - ${{ matrix.example.name }}
+        run: |
+          cd examples/${{ matrix.example.name }}
+          go run server.go &
+          sleep 2
+      
+      - name: Run CLI test - ${{ matrix.example.name }}
+        run: |
+          ./bin/tavern examples/${{ matrix.example.name }}/${{ matrix.example.file }}
+      
+      - name: Stop test server
+        if: always()
+        run: pkill -f "go run server.go" || true
+
   lint:
     name: Lint
     runs-on: ubuntu-latest
