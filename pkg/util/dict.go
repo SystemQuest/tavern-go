@@ -145,8 +145,38 @@ func formatSlice(s []interface{}, variables map[string]interface{}) ([]interface
 	return result, nil
 }
 
-// RecurseAccessKey accesses a nested key in a map or slice using dot notation
-// Example: "user.profile.name" or "items.0.id"
+// RecurseAccessKey accesses a nested key in a map or slice using dot notation.
+// It splits the key by dots and recursively traverses the data structure.
+//
+// Examples:
+//
+//	Accessing nested dictionary keys:
+//	  data := map[string]interface{}{
+//	    "user": map[string]interface{}{
+//	      "profile": map[string]interface{}{
+//	        "name": "John",
+//	      },
+//	    },
+//	  }
+//	  result, _ := RecurseAccessKey(data, "user.profile.name")
+//	  // result == "John"
+//
+//	Accessing array elements by index:
+//	  data := map[string]interface{}{
+//	    "items": []interface{}{"a", "b", "c"},
+//	  }
+//	  result, _ := RecurseAccessKey(data, "items.1")
+//	  // result == "b"
+//
+//	Combining nested keys and array access:
+//	  data := map[string]interface{}{
+//	    "users": []interface{}{
+//	      map[string]interface{}{"id": 1, "name": "Alice"},
+//	      map[string]interface{}{"id": 2, "name": "Bob"},
+//	    },
+//	  }
+//	  result, _ := RecurseAccessKey(data, "users.0.name")
+//	  // result == "Alice"
 func RecurseAccessKey(data interface{}, key string) (interface{}, error) {
 	keys := strings.Split(key, ".")
 	return recurseAccessKeyList(data, keys)
