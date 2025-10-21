@@ -10,6 +10,9 @@ tavern
 examples/*/server
 examples/*/*/server
 
+# Integration test server binary
+tests/integration/server
+
 # Test binary, built with `go test -c`
 *.test
 

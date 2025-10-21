@@ -411,6 +411,74 @@ func TestRunner_IncludeFiles(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+// TestRunner_IncludeFilesWithEnvVars tests that environment variables can be used in included files (tavern-py commit 8ea5f2d)
+func TestRunner_IncludeFilesWithEnvVars(t *testing.T) {
+	// Set environment variables for the test
+	os.Setenv("TEST_HOST", "http://localhost:5000")
+	os.Setenv("SECOND_URL_PART", "again")
+	defer func() {
+		os.Unsetenv("TEST_HOST")
+		os.Unsetenv("SECOND_URL_PART")
+	}()
+
+	// Create a test server that matches the expected URL pattern
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+
+		// Check URL path matches /nested/again
+		if r.URL.Path == "/nested/again" {
+			w.WriteHeader(http.StatusOK)
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
+				"status": "OK",
+			})
+		} else {
+			w.WriteHeader(http.StatusNotFound)
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
+				"error": "not found",
+			})
+		}
+	}))
+	defer server.Close()
+
+	// Create test spec with includes that use environment variables
+	testSpec := &schema.TestSpec{
+		TestName: "Test env var formatting in included files",
+		Includes: []schema.Include{
+			{
+				Name: "common config with env vars",
+				Variables: map[string]interface{}{
+					"host":        server.URL,
+					"first_part":  "nested",
+					"second_part": "{tavern.env_vars.SECOND_URL_PART}", // Should be formatted to "again"
+				},
+			},
+		},
+		Stages: []schema.Stage{
+			{
+				Name: "Make request using variables from included file",
+				Request: &schema.RequestSpec{
+					URL:    "{host}/{first_part}/{second_part}",
+					Method: "GET",
+				},
+				Response: &schema.ResponseSpec{
+					StatusCode: 200,
+					Body: map[string]interface{}{
+						"status": "OK",
+					},
+				},
+			},
+		},
+	}
+
+	// Create runner
+	runner, err := NewRunner(&Config{})
+	require.NoError(t, err)
+
+	// Run test
+	err = runner.RunTest(testSpec)
+	assert.NoError(t, err)
+}
+
 // TestRunner_SetAndGetVariable tests variable management
 func TestRunner_SetAndGetVariable(t *testing.T) {
 	runner, err := NewRunner(&Config{})

@@ -168,10 +168,19 @@ func (r *Runner) RunTest(test *schema.TestSpec) error {
 	}
 
 	// Process includes
+	// Format variables before merging to allow env vars in included files (aligned with tavern-py commit 8ea5f2d)
 	for _, include := range test.Includes {
 		r.logger.Debugf("Processing include: %s", include.Name)
-		for k, v := range include.Variables {
-			testConfig.Variables[k] = v
+		// Format all include variables at once to support {tavern.env_vars.XXX} and other variables
+		formattedInclude, err := util.FormatKeys(include.Variables, testConfig.Variables)
+		if err != nil {
+			return fmt.Errorf("failed to format include variables: %w", err)
+		}
+		// Merge formatted variables
+		if formattedMap, ok := formattedInclude.(map[string]interface{}); ok {
+			for k, v := range formattedMap {
+				testConfig.Variables[k] = v
+			}
 		}
 	}
 

@@ -1,0 +1,91 @@
+.PHONY: all build server test test-verbose clean help
+
+# Default target
+all: help
+
+# Binary name
+BINARY=server
+
+# Build the test server
+build:
+	@echo "🔨 Building integration test server..."
+	cd cmd/server && go build -o ../../$(BINARY) server.go
+	@echo "✅ Server binary created"
+
+# Start the test server
+server: build
+	@echo "🚀 Starting integration test server on http://localhost:5000"
+	@echo "Press Ctrl+C to stop"
+	@./$(BINARY)
+
+# Run tavern tests
+test:
+	@echo "🧪 Running integration tests..."
+	@if [ ! -f ../../bin/tavern ]; then \
+		echo "Building tavern CLI..."; \
+		cd ../.. && make build; \
+	fi
+	@echo "Testing response types..."
+	@TEST_HOST=http://localhost:5000 SECOND_URL_PART=again ../../bin/tavern test_response_types.tavern.yaml
+	@echo "Testing type tokens..."
+	@TEST_HOST=http://localhost:5000 SECOND_URL_PART=again ../../bin/tavern test_typetokens.tavern.yaml
+	@echo "Testing env var format..."
+	@TEST_HOST=http://localhost:5000 SECOND_URL_PART=again ../../bin/tavern test_env_var_format.tavern.yaml
+	@echo "✅ All tests passed!"
+
+# Run tests with verbose output
+test-verbose:
+	@echo "🧪 Running integration tests (verbose)..."
+	@if [ ! -f ../../bin/tavern ]; then \
+		echo "Building tavern CLI..."; \
+		cd ../.. && make build; \
+	fi
+	@echo "Testing response types..."
+	@TEST_HOST=http://localhost:5000 SECOND_URL_PART=again ../../bin/tavern -v test_response_types.tavern.yaml
+	@echo "Testing type tokens..."
+	@TEST_HOST=http://localhost:5000 SECOND_URL_PART=again ../../bin/tavern -v test_typetokens.tavern.yaml
+	@echo "Testing env var format..."
+	@TEST_HOST=http://localhost:5000 SECOND_URL_PART=again ../../bin/tavern -v test_env_var_format.tavern.yaml
+
+# Quick test - start server in background, run tests, stop server
+quick-test: build
+	@echo "⚡ Quick test mode..."
+	@echo "Starting server in background..."
+	@./$(BINARY) > /dev/null 2>&1 & echo $$! > .server.pid
+	@sleep 2
+	@echo "Running tests..."
+	@$(MAKE) test || true
+	@echo "Stopping server..."
+	@kill `cat .server.pid` 2>/dev/null || true
+	@rm -f .server.pid
+	@echo "✅ Quick test complete"
+
+# Clean up
+clean:
+	@echo "🧹 Cleaning up..."
+	@rm -f $(BINARY) .server.pid
+	@echo "✅ Cleanup complete"
+
+# Show help
+help:
+	@echo "📖 Available commands:"
+	@echo ""
+	@echo "  make build        - Build the test server"
+	@echo "  make server       - Start the test server"
+	@echo "  make test         - Run integration tests (server must be running)"
+	@echo "  make test-verbose - Run tests with verbose output"
+	@echo "  make quick-test   - Auto start server, test, and stop"
+	@echo "  make clean        - Clean up binaries and temporary files"
+	@echo "  make help         - Show this help message"
+	@echo ""
+	@echo "💡 Typical workflow:"
+	@echo "  Terminal 1: make server"
+	@echo "  Terminal 2: make test"
+	@echo ""
+	@echo "⚡ Or use: make quick-test (automated)"
+	@echo ""
+	@echo "📋 Test files:"
+	@echo "  - test_response_types.tavern.yaml   (list/array responses)"
+	@echo "  - test_typetokens.tavern.yaml       (!anything marker)"
+	@echo "  - test_env_var_format.tavern.yaml   (env vars in includes)"
+

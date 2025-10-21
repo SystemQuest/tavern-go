@@ -43,14 +43,8 @@ func (l *Loader) Load(filename string) ([]*schema.TestSpec, error) {
 		return nil, fmt.Errorf("failed to read file: %w", err)
 	}
 
-	// Process !include directives
-	processed, err := l.processIncludes(string(data))
-	if err != nil {
-		return nil, fmt.Errorf("failed to process includes: %w", err)
-	}
-
-	// Parse YAML documents
-	tests, err := l.parseYAML(processed, absPath)
+	// Parse YAML documents (custom tags will be processed during parsing)
+	tests, err := l.parseYAML(string(data), absPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse YAML: %w", err)
 	}
@@ -60,19 +54,20 @@ func (l *Loader) Load(filename string) ([]*schema.TestSpec, error) {
 
 // processIncludes processes !include directives in YAML
 func (l *Loader) processIncludes(data string) (string, error) {
-	// Pattern to match !include filename
-	re := regexp.MustCompile(`!include\s+(\S+)`)
+	// Pattern to match !include filename (with optional leading dash for array items)
+	re := regexp.MustCompile(`(-\s+)?!include\s+(\S+)`)
 
 	result := data
 	matches := re.FindAllStringSubmatch(data, -1)
 
 	for _, match := range matches {
-		if len(match) < 2 {
+		if len(match) < 3 {
 			continue
 		}
 
 		fullMatch := match[0]
-		filename := match[1]
+		arrayPrefix := match[1] // Will be "- " if it's an array item, empty otherwise
+		filename := match[2]
 
 		// Read the included file
 		includePath := filepath.Join(l.baseDir, filename)
@@ -87,10 +82,26 @@ func (l *Loader) processIncludes(data string) (string, error) {
 			return "", err
 		}
 
-		// Replace the !include directive with the file content
-		// Indent the content appropriately
-		indentedContent := l.indentYAML(processedContent, l.getIndent(data, fullMatch))
-		result = strings.Replace(result, fullMatch, indentedContent, 1)
+		// Remove the leading "---" if present in included file
+		processedContent = strings.TrimPrefix(processedContent, "---\n")
+		processedContent = strings.TrimPrefix(processedContent, "---\r\n")
+		processedContent = strings.TrimSpace(processedContent)
+
+		// If this is an array item (has "- " prefix), remove the dash since
+		// the included content will become the array item
+		var replacement string
+		if arrayPrefix != "" {
+			// For array items, indent the included content to align with array items
+			indent := l.getIndent(data, fullMatch)
+			indentedContent := l.indentYAML(processedContent, indent)
+			replacement = indentedContent
+		} else {
+			// For non-array contexts, just indent normally
+			indentedContent := l.indentYAML(processedContent, l.getIndent(data, fullMatch))
+			replacement = indentedContent
+		}
+
+		result = strings.Replace(result, fullMatch, replacement, 1)
 	}
 
 	return result, nil
@@ -141,9 +152,42 @@ func (l *Loader) indentYAML(content string, spaces int) string {
 	return strings.Join(lines, "\n")
 }
 
-// processCustomTags recursively processes custom YAML tags like !anything, !int, !float
+// processCustomTags recursively processes custom YAML tags like !anything, !int, !float, !include
 func (l *Loader) processCustomTags(node *goyaml.Node) {
 	if node == nil {
+		return
+	}
+
+	// Check for !include tag
+	if node.Tag == "!include" {
+		// Load the included file
+		filename := node.Value
+		includePath := filepath.Join(l.baseDir, filename)
+
+		// Read the included file
+		data, err := os.ReadFile(includePath)
+		if err != nil {
+			// If we can't read the file, leave the node as-is
+			// The error will be caught during validation
+			return
+		}
+
+		// Parse the included file into a YAML node
+		var includedNode goyaml.Node
+		err = goyaml.Unmarshal(data, &includedNode)
+		if err != nil {
+			return
+		}
+
+		// Process custom tags in the included content
+		l.processCustomTags(&includedNode)
+
+		// Replace the !include node with the content of the included file
+		// The included file should have a document node at the root
+		if includedNode.Kind == goyaml.DocumentNode && len(includedNode.Content) > 0 {
+			// Copy the first content node (the actual data)
+			*node = *includedNode.Content[0]
+		}
 		return
 	}
 

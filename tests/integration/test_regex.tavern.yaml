@@ -1,0 +1,46 @@
+---
+
+test_name: Make sure server response matches regex
+
+includes:
+  - !include common.yaml
+
+stages:
+  - name: simple match
+    request:
+      url: "{host}/token"
+      method: GET
+    response:
+      status_code: 200
+      body:
+        $ext:
+          function: tavern.testutils.helpers:validate_regex
+          extra_kwargs:
+            expression: '<a src=\".*\">'
+
+  - name: save groups
+    request:
+      url: "{host}/token"
+      method: GET
+    response:
+      status_code: 200
+      save:
+        $ext:
+          function: tavern.testutils.helpers:validate_regex
+          extra_kwargs:
+            expression: 'token=(?P<token>[0-9a-f-]+)'
+        body:
+          url:
+            $ext:
+              function: tavern.testutils.helpers:validate_regex
+              extra_kwargs:
+                expression: 'http://(?P<callback_url>.+)/verify\?token=(?P<callback_token>[0-9a-f-]+)'
+
+  - name: use values from previous response
+    request:
+      url: "{host}/verify"
+      method: GET
+      params:
+        token: "{callback_token}"
+    response:
+      status_code: 200
