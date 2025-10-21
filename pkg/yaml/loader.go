@@ -1,7 +1,6 @@
 package yaml
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -157,24 +156,13 @@ func (l *Loader) parseYAML(data string, filename string) ([]*schema.TestSpec, er
 		// Process custom tags like !anything
 		l.processCustomTags(&node)
 
-		// Decode into a generic map first to preserve the processed values
-		var rawTest map[string]interface{}
-		err = node.Decode(&rawTest)
+		// Decode the test spec directly
+		// The processCustomTags call above has already modified the node tree
+		// to replace custom tags with marker strings like <<ANYTHING>>, <<INT>>, etc.
+		var test schema.TestSpec
+		err = node.Decode(&test)
 		if err != nil {
 			return nil, fmt.Errorf("failed to decode test spec: %w", err)
-		}
-
-		// Convert to JSON and back to preserve the processed values
-		// This works because JSON doesn't have custom tags
-		jsonBytes, err := json.Marshal(rawTest)
-		if err != nil {
-			return nil, fmt.Errorf("failed to marshal to JSON: %w", err)
-		}
-
-		var test schema.TestSpec
-		err = json.Unmarshal(jsonBytes, &test)
-		if err != nil {
-			return nil, fmt.Errorf("failed to unmarshal from JSON: %w", err)
 		} // Skip empty documents
 		if test.TestName == "" {
 			l.logger.Warnf("Empty document in input file '%s'", filename)
