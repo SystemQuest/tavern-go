@@ -414,11 +414,15 @@ func TestRunner_IncludeFiles(t *testing.T) {
 // TestRunner_IncludeFilesWithEnvVars tests that environment variables can be used in included files (tavern-py commit 8ea5f2d)
 func TestRunner_IncludeFilesWithEnvVars(t *testing.T) {
 	// Set environment variables for the test
-	os.Setenv("TEST_HOST", "http://localhost:5000")
-	os.Setenv("SECOND_URL_PART", "again")
+	if err := os.Setenv("TEST_HOST", "http://localhost:5000"); err != nil {
+		t.Fatalf("Failed to set TEST_HOST: %v", err)
+	}
+	if err := os.Setenv("SECOND_URL_PART", "again"); err != nil {
+		t.Fatalf("Failed to set SECOND_URL_PART: %v", err)
+	}
 	defer func() {
-		os.Unsetenv("TEST_HOST")
-		os.Unsetenv("SECOND_URL_PART")
+		_ = os.Unsetenv("TEST_HOST")
+		_ = os.Unsetenv("SECOND_URL_PART")
 	}()
 
 	// Create a test server that matches the expected URL pattern

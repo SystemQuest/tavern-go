@@ -5,7 +5,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 
 	"github.com/sirupsen/logrus"
@@ -50,106 +49,6 @@ func (l *Loader) Load(filename string) ([]*schema.TestSpec, error) {
 	}
 
 	return tests, nil
-}
-
-// processIncludes processes !include directives in YAML
-func (l *Loader) processIncludes(data string) (string, error) {
-	// Pattern to match !include filename (with optional leading dash for array items)
-	re := regexp.MustCompile(`(-\s+)?!include\s+(\S+)`)
-
-	result := data
-	matches := re.FindAllStringSubmatch(data, -1)
-
-	for _, match := range matches {
-		if len(match) < 3 {
-			continue
-		}
-
-		fullMatch := match[0]
-		arrayPrefix := match[1] // Will be "- " if it's an array item, empty otherwise
-		filename := match[2]
-
-		// Read the included file
-		includePath := filepath.Join(l.baseDir, filename)
-		content, err := os.ReadFile(includePath)
-		if err != nil {
-			return "", fmt.Errorf("failed to read include file %s: %w", filename, err)
-		}
-
-		// Recursively process includes in the included file
-		processedContent, err := l.processIncludes(string(content))
-		if err != nil {
-			return "", err
-		}
-
-		// Remove the leading "---" if present in included file
-		processedContent = strings.TrimPrefix(processedContent, "---\n")
-		processedContent = strings.TrimPrefix(processedContent, "---\r\n")
-		processedContent = strings.TrimSpace(processedContent)
-
-		// If this is an array item (has "- " prefix), remove the dash since
-		// the included content will become the array item
-		var replacement string
-		if arrayPrefix != "" {
-			// For array items, indent the included content to align with array items
-			indent := l.getIndent(data, fullMatch)
-			indentedContent := l.indentYAML(processedContent, indent)
-			replacement = indentedContent
-		} else {
-			// For non-array contexts, just indent normally
-			indentedContent := l.indentYAML(processedContent, l.getIndent(data, fullMatch))
-			replacement = indentedContent
-		}
-
-		result = strings.Replace(result, fullMatch, replacement, 1)
-	}
-
-	return result, nil
-}
-
-// getIndent determines the indentation level of a match
-func (l *Loader) getIndent(data, match string) int {
-	idx := strings.Index(data, match)
-	if idx == -1 {
-		return 0
-	}
-
-	// Find the start of the line
-	lineStart := idx
-	for lineStart > 0 && data[lineStart-1] != '\n' {
-		lineStart--
-	}
-
-	// Count spaces
-	indent := 0
-	for i := lineStart; i < idx; i++ {
-		switch data[i] {
-		case ' ':
-			indent++
-		case '\t':
-			indent += 4
-		}
-	}
-
-	return indent
-}
-
-// indentYAML indents YAML content
-func (l *Loader) indentYAML(content string, spaces int) string {
-	if spaces == 0 {
-		return content
-	}
-
-	indent := strings.Repeat(" ", spaces)
-	lines := strings.Split(content, "\n")
-
-	for i, line := range lines {
-		if line != "" {
-			lines[i] = indent + line
-		}
-	}
-
-	return strings.Join(lines, "\n")
 }
 
 // processCustomTags recursively processes custom YAML tags like !anything, !int, !float, !include
