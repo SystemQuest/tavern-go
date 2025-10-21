@@ -354,9 +354,48 @@ func (v *RestValidator) validateList(blockName string, actual interface{}, expec
 			// Nested array: recursive call
 			v.validateList(indexName, actualVal, exp)
 		case string:
-			// Check for !anything marker
+			// Check for type markers
 			if exp == "<<ANYTHING>>" {
 				v.logger.Debugf("%s: actual value = '%v' - matches !anything", indexName, actualVal)
+				continue
+			}
+			if strings.HasPrefix(exp, "<<STR>>") {
+				// Check if actual value is a string
+				if _, ok := actualVal.(string); !ok {
+					v.addError(fmt.Sprintf("%s: expected string type (from !anystr), got '%v' (type: %T)",
+						indexName, actualVal, actualVal))
+				} else {
+					v.logger.Debugf("%s: actual value = '%v' - matches !anystr", indexName, actualVal)
+				}
+				continue
+			}
+			if strings.HasPrefix(exp, "<<INT>>") {
+				// Check if actual value is an integer (in JSON it could be float64 without decimal part)
+				switch val := actualVal.(type) {
+				case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
+					v.logger.Debugf("%s: actual value = '%v' - matches !anyint", indexName, actualVal)
+				case float64:
+					if val == float64(int64(val)) {
+						v.logger.Debugf("%s: actual value = '%v' - matches !anyint", indexName, actualVal)
+					} else {
+						v.addError(fmt.Sprintf("%s: expected integer type (from !anyint), got '%v' (type: %T with decimal part)",
+							indexName, actualVal, actualVal))
+					}
+				default:
+					v.addError(fmt.Sprintf("%s: expected integer type (from !anyint), got '%v' (type: %T)",
+						indexName, actualVal, actualVal))
+				}
+				continue
+			}
+			if strings.HasPrefix(exp, "<<FLOAT>>") {
+				// Check if actual value is a numeric type (float or int)
+				switch actualVal.(type) {
+				case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, float32, float64:
+					v.logger.Debugf("%s: actual value = '%v' - matches !anyfloat", indexName, actualVal)
+				default:
+					v.addError(fmt.Sprintf("%s: expected numeric type (from !anyfloat), got '%v' (type: %T)",
+						indexName, actualVal, actualVal))
+				}
 				continue
 			}
 			// Primitive value: direct comparison

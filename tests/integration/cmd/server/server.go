@@ -60,14 +60,19 @@ func fakeDictionaryHandler(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewEncoder(w).Encode(response)
 }
 
-// FakeList endpoint - returns JSON array
+// FakeList endpoint - returns JSON array with mixed types
 func fakeListHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
-	response := []string{"a", "b", "c"}
+	// Mixed types: strings, integers, and floats (aligned with tavern-py commit 59e615d)
+	response := []interface{}{
+		"a", "b", "c",
+		1, 2, 3,
+		-1.0, -2.0, -3.0,
+	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
