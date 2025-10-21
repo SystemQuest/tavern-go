@@ -106,18 +106,33 @@ func applyTypeConversion(s string) (interface{}, error) {
 	// Check for !int or !anyint marker
 	if strings.HasPrefix(s, "<<INT>>") {
 		value := strings.TrimPrefix(s, "<<INT>>")
+		// If value is empty, it's a type matcher (!anyint), not a type converter
+		// Keep the marker for validation
+		if value == "" {
+			return s, nil
+		}
 		return IntConverter(value)
 	}
 
 	// Check for !float or !anyfloat marker
 	if strings.HasPrefix(s, "<<FLOAT>>") {
 		value := strings.TrimPrefix(s, "<<FLOAT>>")
+		// If value is empty, it's a type matcher (!anyfloat), not a type converter
+		// Keep the marker for validation
+		if value == "" {
+			return s, nil
+		}
 		return FloatConverter(value)
 	}
 
 	// Check for !str or !anystr marker
 	if strings.HasPrefix(s, "<<STR>>") {
 		value := strings.TrimPrefix(s, "<<STR>>")
+		// If value is empty, it's a type matcher (!anystr), not a type converter
+		// Keep the marker for validation
+		if value == "" {
+			return s, nil
+		}
 		// For string type, just return the formatted value as string
 		return value, nil
 	}

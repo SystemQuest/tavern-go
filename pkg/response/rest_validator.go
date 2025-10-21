@@ -359,7 +359,7 @@ func (v *RestValidator) validateList(blockName string, actual interface{}, expec
 				v.logger.Debugf("%s: actual value = '%v' - matches !anything", indexName, actualVal)
 				continue
 			}
-			if strings.HasPrefix(exp, "<<STR>>") {
+			if exp == "<<STR>>" || strings.HasPrefix(exp, "<<STR>>") {
 				// Check if actual value is a string
 				if _, ok := actualVal.(string); !ok {
 					v.addError(fmt.Sprintf("%s: expected string type (from !anystr), got '%v' (type: %T)",
@@ -369,7 +369,7 @@ func (v *RestValidator) validateList(blockName string, actual interface{}, expec
 				}
 				continue
 			}
-			if strings.HasPrefix(exp, "<<INT>>") {
+			if exp == "<<INT>>" || strings.HasPrefix(exp, "<<INT>>") {
 				// Check if actual value is an integer (in JSON it could be float64 without decimal part)
 				switch val := actualVal.(type) {
 				case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
@@ -387,7 +387,7 @@ func (v *RestValidator) validateList(blockName string, actual interface{}, expec
 				}
 				continue
 			}
-			if strings.HasPrefix(exp, "<<FLOAT>>") {
+			if exp == "<<FLOAT>>" || strings.HasPrefix(exp, "<<FLOAT>>") {
 				// Check if actual value is a numeric type (float or int)
 				switch actualVal.(type) {
 				case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, float32, float64:

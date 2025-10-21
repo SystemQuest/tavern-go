@@ -79,6 +79,28 @@ func fakeListHandler(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewEncoder(w).Encode(response)
 }
 
+// NestedList endpoint - returns JSON with nested array containing mixed types
+func nestedListHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	response := map[string]interface{}{
+		"top": []interface{}{
+			"a",
+			"b",
+			map[string]interface{}{
+				"key": "val",
+			},
+		},
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(response)
+}
+
 // Nested/again endpoint - returns simple OK status
 func nestedAgainHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
@@ -101,6 +123,7 @@ func main() {
 	http.HandleFunc("/verify", verifyHandler)
 	http.HandleFunc("/fake_dictionary", fakeDictionaryHandler)
 	http.HandleFunc("/fake_list", fakeListHandler)
+	http.HandleFunc("/nested_list", nestedListHandler)
 	http.HandleFunc("/nested/again", nestedAgainHandler)
 
 	// Start server
