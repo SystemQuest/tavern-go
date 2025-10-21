@@ -165,3 +165,76 @@ stages:
 	require.True(t, hasResult, "result should exist")
 	assert.Equal(t, "<<INT>>100", result, "!int should be converted to <<INT>> marker")
 }
+
+func TestLoader_TypeConvertTagsAliases(t *testing.T) {
+	// Create a temporary test file with !anyint, !anyfloat, !anystr, !str tags
+	tmpDir := t.TempDir()
+	testFile := filepath.Join(tmpDir, "test_typeconvert_aliases.yaml")
+
+	content := `---
+test_name: Test type conversion tag aliases
+stages:
+  - name: Test stage
+    request:
+      url: http://example.com
+      method: POST
+      json:
+        number: !anyint "42"
+        price: !anyfloat "19.99"
+        name: !str "test"
+        description: !anystr "hello"
+    response:
+      status_code: 200
+      body:
+        result: !anyint "100"
+        message: !anystr "success"
+`
+
+	err := os.WriteFile(testFile, []byte(content), 0644)
+	require.NoError(t, err)
+
+	// Load the test file
+	loader := NewLoader(tmpDir)
+	tests, err := loader.Load(testFile)
+	require.NoError(t, err)
+	require.Len(t, tests, 1)
+
+	test := tests[0]
+	assert.Equal(t, "Test type conversion tag aliases", test.TestName)
+	require.Len(t, test.Stages, 1)
+
+	stage := test.Stages[0]
+	assert.Equal(t, "Test stage", stage.Name)
+
+	// Check JSON body - should have type convert markers
+	jsonBody, ok := stage.Request.JSON.(map[string]interface{})
+	require.True(t, ok, "JSON body should be a map")
+
+	number, hasNumber := jsonBody["number"]
+	require.True(t, hasNumber, "number should exist")
+	assert.Equal(t, "<<INT>>42", number, "!anyint should be converted to <<INT>> marker")
+
+	price, hasPrice := jsonBody["price"]
+	require.True(t, hasPrice, "price should exist")
+	assert.Equal(t, "<<FLOAT>>19.99", price, "!anyfloat should be converted to <<FLOAT>> marker")
+
+	name, hasName := jsonBody["name"]
+	require.True(t, hasName, "name should exist")
+	assert.Equal(t, "<<STR>>test", name, "!str should be converted to <<STR>> marker")
+
+	desc, hasDesc := jsonBody["description"]
+	require.True(t, hasDesc, "description should exist")
+	assert.Equal(t, "<<STR>>hello", desc, "!anystr should be converted to <<STR>> marker")
+
+	// Check response body
+	respBody, ok := stage.Response.Body.(map[string]interface{})
+	require.True(t, ok, "response body should be a map")
+
+	result, hasResult := respBody["result"]
+	require.True(t, hasResult, "result should exist")
+	assert.Equal(t, "<<INT>>100", result, "!anyint should be converted to <<INT>> marker")
+
+	message, hasMessage := respBody["message"]
+	require.True(t, hasMessage, "message should exist")
+	assert.Equal(t, "<<STR>>success", message, "!anystr should be converted to <<STR>> marker")
+}

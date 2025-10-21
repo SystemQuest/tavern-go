@@ -103,16 +103,23 @@ func getNestedValue(variables map[string]interface{}, path string) (interface{},
 
 // applyTypeConversion applies type conversion if the string has a type marker
 func applyTypeConversion(s string) (interface{}, error) {
-	// Check for !int marker
+	// Check for !int or !anyint marker
 	if strings.HasPrefix(s, "<<INT>>") {
 		value := strings.TrimPrefix(s, "<<INT>>")
 		return IntConverter(value)
 	}
 
-	// Check for !float marker
+	// Check for !float or !anyfloat marker
 	if strings.HasPrefix(s, "<<FLOAT>>") {
 		value := strings.TrimPrefix(s, "<<FLOAT>>")
 		return FloatConverter(value)
+	}
+
+	// Check for !str or !anystr marker
+	if strings.HasPrefix(s, "<<STR>>") {
+		value := strings.TrimPrefix(s, "<<STR>>")
+		// For string type, just return the formatted value as string
+		return value, nil
 	}
 
 	// No type conversion needed

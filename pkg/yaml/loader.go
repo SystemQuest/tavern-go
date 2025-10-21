@@ -51,7 +51,7 @@ func (l *Loader) Load(filename string) ([]*schema.TestSpec, error) {
 	return tests, nil
 }
 
-// processCustomTags recursively processes custom YAML tags like !anything, !int, !float, !include
+// processCustomTags recursively processes custom YAML tags like !anything, !int, !anyint, !float, !anyfloat, !str, !anystr, !include
 func (l *Loader) processCustomTags(node *goyaml.Node) {
 	if node == nil {
 		return
@@ -99,8 +99,8 @@ func (l *Loader) processCustomTags(node *goyaml.Node) {
 		return
 	}
 
-	// Check for !int tag
-	if node.Tag == "!int" {
+	// Check for !int or !anyint tag
+	if node.Tag == "!int" || node.Tag == "!anyint" {
 		// Mark as type convert token
 		node.Tag = "!!str"
 		node.Value = "<<INT>>" + node.Value
@@ -108,11 +108,20 @@ func (l *Loader) processCustomTags(node *goyaml.Node) {
 		return
 	}
 
-	// Check for !float tag
-	if node.Tag == "!float" {
+	// Check for !float or !anyfloat tag
+	if node.Tag == "!float" || node.Tag == "!anyfloat" {
 		// Mark as type convert token
 		node.Tag = "!!str"
 		node.Value = "<<FLOAT>>" + node.Value
+		node.Kind = goyaml.ScalarNode
+		return
+	}
+
+	// Check for !str or !anystr tag
+	if node.Tag == "!str" || node.Tag == "!anystr" {
+		// Mark as type convert token
+		node.Tag = "!!str"
+		node.Value = "<<STR>>" + node.Value
 		node.Kind = goyaml.ScalarNode
 		return
 	}
