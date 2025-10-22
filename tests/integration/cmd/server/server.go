@@ -67,6 +67,7 @@ func fakeDictionaryHandler(w http.ResponseWriter, r *http.Request) {
 		},
 		"an_integer": 123,
 		"a_string":   "abc",
+		"a_bool":     true, // Aligned with tavern-py commit 09a7376
 	}
 
 	w.Header().Set("Content-Type", "application/json")

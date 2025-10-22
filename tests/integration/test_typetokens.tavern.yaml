@@ -6,6 +6,7 @@
 #       inner: value
 # an_integer: 123
 # a_string: abc
+# a_bool: true
 
 ---
 
@@ -23,6 +24,32 @@ stages:
       status_code: 200
       body:
         top: !anything
+
+---
+
+test_name: Test bool type match
+
+includes:
+  - !include common.yaml
+
+stages:
+  - name: match explicitly
+    request:
+      url: "{host}/fake_dictionary"
+      method: GET
+    response:
+      status_code: 200
+      body:
+        a_bool: true
+
+  - name: match top level
+    request:
+      url: "{host}/fake_dictionary"
+      method: GET
+    response:
+      status_code: 200
+      body:
+        a_bool: !anybool
 
 ---
 
