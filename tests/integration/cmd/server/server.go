@@ -262,13 +262,13 @@ func expectDtypeHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Check if the value type matches the expected dtype
 	var actualType string
-	switch value.(type) {
+	switch v := value.(type) {
 	case bool:
 		actualType = "bool"
 	case float64:
 		// JSON numbers are always float64 in Go
 		// Check if it's actually an int
-		if f, ok := value.(float64); ok && f == float64(int64(f)) {
+		if v == float64(int64(v)) {
 			actualType = "int"
 		} else {
 			actualType = "float"
