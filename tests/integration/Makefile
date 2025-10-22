@@ -33,6 +33,8 @@ test:
 	@TEST_HOST=http://localhost:5000 SECOND_URL_PART=again ../../bin/tavern test_env_var_format.tavern.yaml
 	@echo "Testing file uploads..."
 	@TEST_HOST=http://localhost:5000 SECOND_URL_PART=again ../../bin/tavern test_files.tavern.yaml
+	@echo "Testing regex validation..."
+	@TEST_HOST=http://localhost:5000 SECOND_URL_PART=again ../../bin/tavern test_regex.tavern.yaml
 	@echo "✅ All tests passed!"
 
 # Run tests with verbose output
@@ -50,6 +52,8 @@ test-verbose:
 	@TEST_HOST=http://localhost:5000 SECOND_URL_PART=again ../../bin/tavern -v test_env_var_format.tavern.yaml
 	@echo "Testing file uploads..."
 	@TEST_HOST=http://localhost:5000 SECOND_URL_PART=again ../../bin/tavern -v test_files.tavern.yaml
+	@echo "Testing regex validation..."
+	@TEST_HOST=http://localhost:5000 SECOND_URL_PART=again ../../bin/tavern -v test_regex.tavern.yaml
 
 # Quick test - start server in background, run tests, stop server
 quick-test: build

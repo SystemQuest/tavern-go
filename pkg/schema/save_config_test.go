@@ -8,7 +8,7 @@ import (
 
 func TestNewRegularSave(t *testing.T) {
 	spec := &SaveSpec{
-		Body: map[string]string{"token": "access_token"},
+		Body: map[string]interface{}{"token": "access_token"},
 	}
 
 	config := NewRegularSave(spec)
@@ -192,7 +192,7 @@ test2:
 
 func TestSaveConfig_MarshalYAML_Regular(t *testing.T) {
 	config := NewRegularSave(&SaveSpec{
-		Body: map[string]string{
+		Body: map[string]interface{}{
 			"token": "access_token",
 		},
 		Headers: map[string]string{

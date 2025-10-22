@@ -22,6 +22,18 @@ func tokenHandler(w http.ResponseWriter, r *http.Request) {
 	_, _ = w.Write([]byte(html))
 }
 
+// Headers endpoint - returns response with custom header for regex testing
+func headersHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	w.Header().Set("X-Integration-Value", "_HelloWorld1")
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte("OK"))
+}
+
 // Verify endpoint - validates token from query parameter
 func verifyHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
@@ -175,6 +187,7 @@ func nestedAgainHandler(w http.ResponseWriter, r *http.Request) {
 func main() {
 	// Register handlers
 	http.HandleFunc("/token", tokenHandler)
+	http.HandleFunc("/headers", headersHandler)
 	http.HandleFunc("/verify", verifyHandler)
 	http.HandleFunc("/fake_dictionary", fakeDictionaryHandler)
 	http.HandleFunc("/fake_list", fakeListHandler)

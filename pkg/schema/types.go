@@ -75,9 +75,9 @@ type ResponseSpec struct {
 
 // SaveSpec specifies what to save from the response
 type SaveSpec struct {
-	Body                map[string]string `yaml:"body,omitempty" json:"body,omitempty"`
-	Headers             map[string]string `yaml:"headers,omitempty" json:"headers,omitempty"`
-	RedirectQueryParams map[string]string `yaml:"redirect_query_params,omitempty" json:"redirect_query_params,omitempty"`
+	Body                map[string]interface{} `yaml:"body,omitempty" json:"body,omitempty"`
+	Headers             map[string]string      `yaml:"headers,omitempty" json:"headers,omitempty"`
+	RedirectQueryParams map[string]string      `yaml:"redirect_query_params,omitempty" json:"redirect_query_params,omitempty"`
 }
 
 // ExtSpec represents an extension function specification

@@ -40,7 +40,7 @@ func TestValidator_SaveBodySimple(t *testing.T) {
 	spec := schema.ResponseSpec{
 		StatusCode: 200,
 		Save: schema.NewRegularSave(&schema.SaveSpec{
-			Body: map[string]string{
+			Body: map[string]interface{}{
 				"test_code": "code",
 			},
 		}),
@@ -66,7 +66,7 @@ func TestValidator_SaveBodyNested(t *testing.T) {
 	spec := schema.ResponseSpec{
 		StatusCode: 200,
 		Save: schema.NewRegularSave(&schema.SaveSpec{
-			Body: map[string]string{
+			Body: map[string]interface{}{
 				"test_nested": "user.profile.name",
 			},
 		}),
@@ -96,7 +96,7 @@ func TestValidator_SaveBodyArray(t *testing.T) {
 	spec := schema.ResponseSpec{
 		StatusCode: 200,
 		Save: schema.NewRegularSave(&schema.SaveSpec{
-			Body: map[string]string{
+			Body: map[string]interface{}{
 				"first_item": "items.0.name",
 				"second_id":  "items.1.id",
 			},
@@ -126,7 +126,7 @@ func TestValidator_SaveBodyFromArray(t *testing.T) {
 	spec := schema.ResponseSpec{
 		StatusCode: 200,
 		Save: schema.NewRegularSave(&schema.SaveSpec{
-			Body: map[string]string{
+			Body: map[string]interface{}{
 				"first_user_id":   "0.id",
 				"first_user_name": "0.name",
 			},
@@ -208,7 +208,7 @@ func TestValidator_SaveNonExistentKey(t *testing.T) {
 	spec := schema.ResponseSpec{
 		StatusCode: 200,
 		Save: schema.NewRegularSave(&schema.SaveSpec{
-			Body: map[string]string{
+			Body: map[string]interface{}{
 				"missing": "does.not.exist",
 			},
 		}),
@@ -396,7 +396,7 @@ func TestValidator_ValidateAndSave(t *testing.T) {
 			"code":   "abc123",
 		},
 		Save: schema.NewRegularSave(&schema.SaveSpec{
-			Body: map[string]string{
+			Body: map[string]interface{}{
 				"saved_code": "code",
 			},
 		}),

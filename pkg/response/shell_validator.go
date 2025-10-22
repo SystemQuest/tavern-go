@@ -62,8 +62,11 @@ func (v *ShellValidator) Verify(response interface{}) (map[string]interface{}, e
 		if saveSpec != nil {
 			if saveSpec.Body != nil {
 				for varName, pattern := range saveSpec.Body {
-					if value := v.extractFromOutput(shellResp.Stdout, pattern); value != "" {
-						saved[varName] = value
+					// For shell responses, patterns must be strings
+					if patternStr, ok := pattern.(string); ok {
+						if value := v.extractFromOutput(shellResp.Stdout, patternStr); value != "" {
+							saved[varName] = value
+						}
 					}
 				}
 			}

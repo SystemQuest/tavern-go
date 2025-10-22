@@ -121,36 +121,38 @@ func (v *RestValidator) Verify(resp *http.Response) (map[string]interface{}, err
 		}
 	}
 
-	// Save values - using type-safe SaveConfig union type
+	// Save values - SaveConfig can contain both extension and regular save
 	if v.spec.Save != nil {
-		// Handle extension-based save ($ext)
-		if v.spec.Save.IsExtension() {
-			ext := v.spec.Save.GetExtension()
-			extSaved, err := v.saveWithExtSpec(ext, resp)
-			if err != nil {
-				v.addError(fmt.Sprintf("failed to save with extension: %v", err))
-			} else {
-				for k, v := range extSaved {
-					saved[k] = v
-				}
-			}
-			goto skipRegularSave
-		}
-
-		// Handle regular save (body, headers, redirect_query_params)
+		// Handle regular save first (body, headers, redirect_query_params)
 		if v.spec.Save.IsRegular() {
 			saveSpec := v.spec.Save.GetSpec()
 			if saveSpec != nil {
 				// Save from body
 				if saveSpec.Body != nil {
-					// Parse body as generic interface for array support
+					// Check if we need to parse body as JSON (only if there are string paths)
+					hasStringPaths := false
+					for _, saveValue := range saveSpec.Body {
+						if _, ok := saveValue.(string); ok {
+							hasStringPaths = true
+							break
+						}
+					}
+
 					var bodyData interface{}
-					if len(bodyBytes) > 0 {
+					if hasStringPaths && len(bodyBytes) > 0 {
+						// Only unmarshal if we have string paths
 						err = json.Unmarshal(bodyBytes, &bodyData)
 						if err != nil {
 							v.addError(fmt.Sprintf("failed to parse body for saving: %v", err))
-						} else {
-							for saveName, jsonPath := range saveSpec.Body {
+							bodyData = nil // Don't fail completely, just skip JSON extraction
+						}
+					}
+
+					for saveName, saveValue := range saveSpec.Body {
+						// Check if saveValue is a string (JSON path) or an extension ($ext)
+						if jsonPath, ok := saveValue.(string); ok {
+							// Regular JSON path extraction
+							if bodyData != nil {
 								val, err := v.extractValue(bodyData, jsonPath)
 								if err != nil {
 									v.addError(fmt.Sprintf("failed to save %s from body: %v", saveName, err))
@@ -158,10 +160,48 @@ func (v *RestValidator) Verify(resp *http.Response) (map[string]interface{}, err
 									saved[saveName] = val
 								}
 							}
+						} else if extMap, ok := saveValue.(map[string]interface{}); ok {
+							// Check if it's an $ext object
+							if extData, hasExt := extMap["$ext"]; hasExt {
+								// Parse as ExtSpec
+								if extSpec, ok := extData.(map[string]interface{}); ok {
+									functionName, _ := extSpec["function"].(string)
+									extraKwargs, _ := extSpec["extra_kwargs"].(map[string]interface{})
+
+									// Create ExtSpec for extension executor
+									ext := &schema.ExtSpec{
+										Function:    functionName,
+										ExtraKwargs: extraKwargs,
+									}
+
+									// Create a temporary response with the original body for the extension
+									tempResp := &http.Response{
+										StatusCode: resp.StatusCode,
+										Header:     resp.Header,
+										Body:       io.NopCloser(bytes.NewReader(bodyBytes)),
+									}
+
+									// Execute the extension
+									extSaved, err := v.saveWithExtSpec(ext, tempResp)
+									if err != nil {
+										v.addError(fmt.Sprintf("failed to save %s with extension: %v", saveName, err))
+									} else {
+										// The extension returns {extensionName: {key: value, ...}}
+										// For validate_regex, it returns {"regex": {"token": "...", "callback_url": "..."}}
+										// We need to flatten and merge these nested values directly into saved
+										for _, nestedValues := range extSaved {
+											if nestedMap, ok := nestedValues.(map[string]interface{}); ok {
+												for k, v := range nestedMap {
+													saved[k] = v
+												}
+											}
+										}
+									}
+								}
+							}
 						}
 					}
 				}
-
 				// Save from headers
 				if saveSpec.Headers != nil {
 					for saveName, headerName := range saveSpec.Headers {
@@ -198,8 +238,27 @@ func (v *RestValidator) Verify(resp *http.Response) (map[string]interface{}, err
 				}
 			}
 		}
+
+		// Handle extension-based save ($ext) - can coexist with regular save
+		if v.spec.Save.IsExtension() {
+			ext := v.spec.Save.GetExtension()
+			extSaved, err := v.saveWithExtSpec(ext, resp)
+			if err != nil {
+				v.addError(fmt.Sprintf("failed to save with extension: %v", err))
+			} else {
+				// Extension returns {extensionName: {key: value, ...}}
+				// For validate_regex, it returns {"regex": {"token": "..."}}
+				// We need to flatten and merge these nested values directly into saved
+				for _, nestedValues := range extSaved {
+					if nestedMap, ok := nestedValues.(map[string]interface{}); ok {
+						for k, v := range nestedMap {
+							saved[k] = v
+						}
+					}
+				}
+			}
+		}
 	}
-skipRegularSave:
 
 	// Check for errors
 	if len(v.errors) > 0 {
@@ -427,7 +486,43 @@ func (v *RestValidator) validateHeaders(actual http.Header, expected map[string]
 		return
 	}
 
-	// Validate each header
+	// Handle $ext validation before processing other headers
+	if extSpec, hasExt := expectedMap["$ext"]; hasExt {
+		extMap, ok := extSpec.(map[string]interface{})
+		if ok {
+			functionName, _ := extMap["function"].(string)
+			extraKwargs, _ := extMap["extra_kwargs"].(map[string]interface{})
+
+			// For inline regex validation in headers
+			if functionName == "tavern.testutils.helpers:validate_regex" {
+				expression, _ := extraKwargs["expression"].(string)
+				headerName, _ := extraKwargs["header"].(string)
+
+				if expression != "" && headerName != "" {
+					// Get the actual header value
+					actualVal := actual.Get(headerName)
+					if actualVal == "" {
+						v.addError(fmt.Sprintf("header %s not found for regex validation", headerName))
+					} else {
+						// Use shared regex validator
+						_, err := regex.Validate(actualVal, expression)
+						if err != nil {
+							v.addError(fmt.Sprintf("header %s regex validation failed: %v", headerName, err))
+						}
+					}
+				}
+			}
+		}
+		// Remove $ext after processing
+		delete(expectedMap, "$ext")
+	}
+
+	// If no more headers to check, return
+	if len(expectedMap) == 0 {
+		return
+	}
+
+	// Validate each remaining header
 	for key, expectedVal := range expectedMap {
 		actualVal := actual.Get(key)
 

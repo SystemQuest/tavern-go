@@ -279,7 +279,7 @@ func TestRunner_VariableFlow(t *testing.T) {
 				Response: &schema.ResponseSpec{
 					StatusCode: 200,
 					Save: schema.NewRegularSave(&schema.SaveSpec{
-						Body: map[string]string{
+						Body: map[string]interface{}{
 							"auth_token": "token",
 						},
 					}),

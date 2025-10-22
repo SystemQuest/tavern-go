@@ -6,9 +6,10 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// SaveConfig represents a union type for save configuration.
-// It can be either a regular SaveSpec or an extension ExtSpec.
-// This design provides type safety and eliminates the need for interface{}.
+// SaveConfig represents save configuration that can contain both
+// regular save fields (body, headers, redirect_query_params) and
+// an optional $ext function. Unlike the previous union type design,
+// this allows them to coexist, matching tavern-py's behavior.
 type SaveConfig struct {
 	spec      *SaveSpec // Regular save configuration (body, headers, redirect_query_params)
 	extension *ExtSpec  // Extension-based save ($ext with function)
@@ -73,18 +74,37 @@ func (sc *SaveConfig) UnmarshalYAML(node *yaml.Node) error {
 		}
 
 		sc.extension = &ext
-		sc.spec = nil
-		return nil
+
+		// Remove $ext from mapData before processing as SaveSpec
+		delete(mapData, "$ext")
 	}
 
-	// Otherwise, it's a regular SaveSpec
-	var spec SaveSpec
-	if err := node.Decode(&spec); err != nil {
-		return fmt.Errorf("failed to decode SaveSpec: %w", err)
+	// Check if there are any regular save fields (body, headers, redirect_query_params)
+	hasRegularFields := false
+	for key := range mapData {
+		if key == "body" || key == "headers" || key == "redirect_query_params" {
+			hasRegularFields = true
+			break
+		}
 	}
 
-	sc.spec = &spec
-	sc.extension = nil
+	// If there are regular fields, decode them as SaveSpec
+	if hasRegularFields {
+		// Create a new node from the modified mapData (without $ext)
+		specNode := &yaml.Node{}
+		if err := specNode.Encode(mapData); err != nil {
+			return fmt.Errorf("failed to encode save spec data: %w", err)
+		}
+
+		var spec SaveSpec
+		if err := specNode.Decode(&spec); err != nil {
+			return fmt.Errorf("failed to decode SaveSpec: %w", err)
+		}
+
+		sc.spec = &spec
+	}
+
+	// Both can be nil if save: {} is specified
 	return nil
 }
 
@@ -94,17 +114,33 @@ func (sc *SaveConfig) MarshalYAML() (interface{}, error) {
 		return nil, nil
 	}
 
+	result := make(map[string]interface{})
+
+	// Add $ext if present
 	if sc.IsExtension() {
-		return map[string]interface{}{
-			"$ext": sc.extension,
-		}, nil
+		result["$ext"] = sc.extension
 	}
 
+	// Add regular spec fields if present
 	if sc.IsRegular() {
-		return sc.spec, nil
+		spec := sc.spec
+		if spec.Body != nil {
+			result["body"] = spec.Body
+		}
+		if spec.Headers != nil {
+			result["headers"] = spec.Headers
+		}
+		if spec.RedirectQueryParams != nil {
+			result["redirect_query_params"] = spec.RedirectQueryParams
+		}
 	}
 
-	return nil, fmt.Errorf("SaveConfig is empty (neither spec nor extension set)")
+	// Return nil if both are empty
+	if len(result) == 0 {
+		return nil, nil
+	}
+
+	return result, nil
 }
 
 // NewSaveConfigFromInterface creates SaveConfig from interface{}.
@@ -119,6 +155,8 @@ func NewSaveConfigFromInterface(data interface{}) (*SaveConfig, error) {
 	if !ok {
 		return nil, fmt.Errorf("save config must be a map, got %T", data)
 	}
+
+	config := &SaveConfig{}
 
 	// Check for $ext key
 	if extData, hasExt := mapData["$ext"]; hasExt {
@@ -143,25 +181,45 @@ func NewSaveConfigFromInterface(data interface{}) (*SaveConfig, error) {
 			ext.ExtraArgs = extraArgs
 		}
 
-		return NewExtensionSave(ext), nil
+		config.extension = ext
 	}
 
-	// Regular SaveSpec - handle various field types
+	// Check for regular save fields
 	spec := &SaveSpec{}
+	hasRegularFields := false
 
 	if bodyData, ok := mapData["body"]; ok {
-		spec.Body = convertToStringMap(bodyData)
+		// Body can be:
+		// 1. map[string]interface{} - may contain strings (JSON paths) or $ext objects
+		// 2. map[string]string - direct JSON paths
+		if bodyMap, ok := bodyData.(map[string]interface{}); ok {
+			spec.Body = bodyMap
+			hasRegularFields = true
+		} else if bodyStrMap, ok := bodyData.(map[string]string); ok {
+			// Convert map[string]string to map[string]interface{}
+			spec.Body = make(map[string]interface{})
+			for k, v := range bodyStrMap {
+				spec.Body[k] = v
+			}
+			hasRegularFields = true
+		}
 	}
 
 	if headersData, ok := mapData["headers"]; ok {
 		spec.Headers = convertToStringMap(headersData)
+		hasRegularFields = true
 	}
 
 	if paramsData, ok := mapData["redirect_query_params"]; ok {
 		spec.RedirectQueryParams = convertToStringMap(paramsData)
+		hasRegularFields = true
 	}
 
-	return NewRegularSave(spec), nil
+	if hasRegularFields {
+		config.spec = spec
+	}
+
+	return config, nil
 }
 
 // convertToStringMap converts interface{} to map[string]string.
