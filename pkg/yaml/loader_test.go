@@ -238,3 +238,62 @@ stages:
 	require.True(t, hasMessage, "message should exist")
 	assert.Equal(t, "<<STR>>success", message, "!anystr should be converted to <<STR>> marker")
 }
+
+// TestLoader_AnyBoolTag tests !anybool tag support (aligned with tavern-py commit 3ff6b3c)
+func TestLoader_AnyBoolTag(t *testing.T) {
+	tmpDir := t.TempDir()
+	testFile := filepath.Join(tmpDir, "test_anybool.yaml")
+
+	content := `---
+test_name: Test anybool tag
+stages:
+  - name: Test stage
+    request:
+      url: http://example.com
+      method: GET
+    response:
+      status_code: 200
+      body:
+        active: !anybool
+        enabled: !anybool
+        flags:
+          feature_a: !anybool
+`
+
+	err := os.WriteFile(testFile, []byte(content), 0644)
+	require.NoError(t, err)
+
+	// Load the test file
+	loader := NewLoader(tmpDir)
+	tests, err := loader.Load(testFile)
+	require.NoError(t, err)
+	require.Len(t, tests, 1)
+
+	test := tests[0]
+	assert.Equal(t, "Test anybool tag", test.TestName)
+	require.Len(t, test.Stages, 1)
+
+	stage := test.Stages[0]
+	assert.Equal(t, "Test stage", stage.Name)
+
+	// Check response body
+	respBody, ok := stage.Response.Body.(map[string]interface{})
+	require.True(t, ok, "response body should be a map")
+
+	active, hasActive := respBody["active"]
+	require.True(t, hasActive, "active should exist")
+	assert.Equal(t, "<<BOOL>>", active, "!anybool should be converted to <<BOOL>> marker")
+
+	enabled, hasEnabled := respBody["enabled"]
+	require.True(t, hasEnabled, "enabled should exist")
+	assert.Equal(t, "<<BOOL>>", enabled, "!anybool should be converted to <<BOOL>> marker")
+
+	flags, hasFlags := respBody["flags"]
+	require.True(t, hasFlags, "flags should exist")
+	flagsMap, ok := flags.(map[string]interface{})
+	require.True(t, ok, "flags should be a map")
+
+	featureA, hasFeatureA := flagsMap["feature_a"]
+	require.True(t, hasFeatureA, "feature_a should exist")
+	assert.Equal(t, "<<BOOL>>", featureA, "!anybool should be converted to <<BOOL>> marker")
+}

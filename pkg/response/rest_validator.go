@@ -360,6 +360,59 @@ func (v *RestValidator) validateBlock(blockName string, actual interface{}, expe
 			continue
 		}
 
+		// Check for type matchers (aligned with tavern-py commit 3ff6b3c)
+		if expectedStr, ok := expectedVal.(string); ok {
+			// Check for !anybool matcher
+			if expectedStr == "<<BOOL>>" {
+				if _, ok := actualVal.(bool); !ok {
+					v.addError(fmt.Sprintf("%s.%s: expected boolean type (from !anybool), got '%v' (type: %T)",
+						blockName, key, actualVal, actualVal))
+				} else {
+					v.logger.Debugf("%s.%s: actual value = '%v' - matches !anybool", blockName, key, actualVal)
+				}
+				continue
+			}
+			// Check for !anyint matcher
+			if expectedStr == "<<INT>>" || strings.HasPrefix(expectedStr, "<<INT>>") {
+				switch val := actualVal.(type) {
+				case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
+					v.logger.Debugf("%s.%s: actual value = '%v' - matches !anyint", blockName, key, actualVal)
+				case float64:
+					if val == float64(int64(val)) {
+						v.logger.Debugf("%s.%s: actual value = '%v' - matches !anyint", blockName, key, actualVal)
+					} else {
+						v.addError(fmt.Sprintf("%s.%s: expected integer type (from !anyint), got '%v' (type: %T with decimal part)",
+							blockName, key, actualVal, actualVal))
+					}
+				default:
+					v.addError(fmt.Sprintf("%s.%s: expected integer type (from !anyint), got '%v' (type: %T)",
+						blockName, key, actualVal, actualVal))
+				}
+				continue
+			}
+			// Check for !anyfloat matcher
+			if expectedStr == "<<FLOAT>>" || strings.HasPrefix(expectedStr, "<<FLOAT>>") {
+				switch actualVal.(type) {
+				case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, float32, float64:
+					v.logger.Debugf("%s.%s: actual value = '%v' - matches !anyfloat", blockName, key, actualVal)
+				default:
+					v.addError(fmt.Sprintf("%s.%s: expected numeric type (from !anyfloat), got '%v' (type: %T)",
+						blockName, key, actualVal, actualVal))
+				}
+				continue
+			}
+			// Check for !anystr matcher
+			if expectedStr == "<<STR>>" || strings.HasPrefix(expectedStr, "<<STR>>") {
+				if _, ok := actualVal.(string); !ok {
+					v.addError(fmt.Sprintf("%s.%s: expected string type (from !anystr), got '%v' (type: %T)",
+						blockName, key, actualVal, actualVal))
+				} else {
+					v.logger.Debugf("%s.%s: actual value = '%v' - matches !anystr", blockName, key, actualVal)
+				}
+				continue
+			}
+		}
+
 		// If expected is an array, use validateList for element-by-element comparison
 		if expectedList, ok := expectedVal.([]interface{}); ok {
 			v.validateList(fmt.Sprintf("%s.%s", blockName, key), actualVal, expectedList)
@@ -450,6 +503,16 @@ func (v *RestValidator) validateList(blockName string, actual interface{}, expec
 				default:
 					v.addError(fmt.Sprintf("%s: expected numeric type (from !anyfloat), got '%v' (type: %T)",
 						indexName, actualVal, actualVal))
+				}
+				continue
+			}
+			if exp == "<<BOOL>>" {
+				// Check if actual value is a boolean (aligned with tavern-py commit 3ff6b3c)
+				if _, ok := actualVal.(bool); !ok {
+					v.addError(fmt.Sprintf("%s: expected boolean type (from !anybool), got '%v' (type: %T)",
+						indexName, actualVal, actualVal))
+				} else {
+					v.logger.Debugf("%s: actual value = '%v' - matches !anybool", indexName, actualVal)
 				}
 				continue
 			}

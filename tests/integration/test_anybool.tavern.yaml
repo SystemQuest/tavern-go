@@ -1,0 +1,38 @@
+---
+# Test !anybool type matcher (aligned with tavern-py commit 3ff6b3c)
+test_name: Test boolean type matching with !anybool
+
+stages:
+  - name: Test anybool matcher in body
+    request:
+      url: "{tavern.env_vars.TEST_HOST}/bool_test"
+      method: GET
+    response:
+      status_code: 200
+      body:
+        active: !anybool
+        enabled: !anybool
+        verified: !anybool
+        completed: !anybool
+
+  - name: Test anybool matcher in nested object
+    request:
+      url: "{tavern.env_vars.TEST_HOST}/bool_test"
+      method: GET
+    response:
+      status_code: 200
+      body:
+        flags.feature_a: !anybool
+        flags.feature_b: !anybool
+
+  - name: Test anybool matcher in array
+    request:
+      url: "{tavern.env_vars.TEST_HOST}/bool_test"
+      method: GET
+    response:
+      status_code: 200
+      body:
+        status_list:
+          - ok: !anybool
+          - ok: !anybool
+

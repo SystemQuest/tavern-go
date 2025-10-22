@@ -184,6 +184,34 @@ func nestedAgainHandler(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewEncoder(w).Encode(response)
 }
 
+// BoolTest endpoint - returns JSON with boolean fields for testing !anybool
+// Aligned with tavern-py commit 3ff6b3c
+func boolTestHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	response := map[string]interface{}{
+		"active":    true,
+		"enabled":   false,
+		"verified":  true,
+		"completed": false,
+		"flags": map[string]interface{}{
+			"feature_a": true,
+			"feature_b": false,
+		},
+		"status_list": []interface{}{
+			map[string]interface{}{"ok": true},
+			map[string]interface{}{"ok": false},
+		},
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(response)
+}
+
 func main() {
 	// Register handlers
 	http.HandleFunc("/token", tokenHandler)
@@ -194,6 +222,7 @@ func main() {
 	http.HandleFunc("/nested_list", nestedListHandler)
 	http.HandleFunc("/fake_upload_file", fakeUploadFileHandler)
 	http.HandleFunc("/nested/again", nestedAgainHandler)
+	http.HandleFunc("/bool_test", boolTestHandler)
 
 	// Start server
 	port := 5000
