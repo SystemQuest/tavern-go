@@ -1,0 +1,16 @@
+---
+name: nested variables test
+description: Test nested variable access
+
+variables:
+  service:
+    proto: http
+    host: localhost
+    port: 5000
+  users:
+    foo:
+      username: foo_user
+      password: foo_pass
+    bar:
+      username: bar_user  
+      password: bar_pass

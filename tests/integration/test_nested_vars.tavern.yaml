@@ -1,0 +1,21 @@
+---
+test_name: Test nested variables support
+
+includes:
+  - !include nested_common.yaml
+
+stages:
+  - name: Test nested variable access
+    request:
+      url: "{service.proto}://{service.host}:{service.port}/echo"
+      method: POST
+      json:
+        foo_username: "{users.foo.username}"
+        bar_username: "{users.bar.username}"
+        foo_password: "{users.foo.password}"
+    response:
+      status_code: 200
+      body:
+        foo_username: foo_user
+        bar_username: bar_user
+        foo_password: foo_pass

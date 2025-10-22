@@ -5,6 +5,6 @@
 核对：tavern-go是否已经完整同步了tavern-py的commit: a4ae88f的变更
 
 Last:
-https://github.com/taverntesting/tavern/commits/master/?before=bf1fe6c08c389fd475ac9608bec514342bb72d7f+861
+https://github.com/taverntesting/tavern/commits/master/?before=bf1fe6c08c389fd475ac9608bec514342bb72d7f+826
 
-Add more in depth integration tests for matching arbitrary return values
+Extend unit test to test bool conversion
