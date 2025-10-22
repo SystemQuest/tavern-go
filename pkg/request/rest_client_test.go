@@ -505,7 +505,7 @@ func TestClient_VerifyDefault(t *testing.T) {
 func TestClient_NestedVariablesInURL(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
+		_ = json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
 	}))
 	defer server.Close()
 
@@ -548,7 +548,7 @@ func TestClient_NestedVariablesInDataArray(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		body, _ := io.ReadAll(r.Body)
 		var data map[string]interface{}
-		json.Unmarshal(body, &data)
+		_ = json.Unmarshal(body, &data)
 
 		// Verify array substitution worked
 		arr, ok := data["array"].([]interface{})

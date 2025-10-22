@@ -254,7 +254,7 @@ func (c *RestClient) buildRequest(spec schema.RequestSpec) (*http.Request, error
 			if err != nil {
 				return nil, fmt.Errorf("failed to open file %s: %w", filePath, err)
 			}
-			defer file.Close()
+			defer func() { _ = file.Close() }()
 
 			// Get file name from path
 			fileName := filepath.Base(filePath)
@@ -262,18 +262,16 @@ func (c *RestClient) buildRequest(spec schema.RequestSpec) (*http.Request, error
 			// Create form file
 			part, err := writer.CreateFormFile(fieldName, fileName)
 			if err != nil {
-				file.Close()
+				_ = file.Close()
 				return nil, fmt.Errorf("failed to create form file: %w", err)
 			}
 
 			// Copy file content
 			if _, err := io.Copy(part, file); err != nil {
-				file.Close()
+				_ = file.Close()
 				return nil, fmt.Errorf("failed to copy file content: %w", err)
 			}
-		}
-
-		// Close multipart writer
+		} // Close multipart writer
 		if err := writer.Close(); err != nil {
 			return nil, fmt.Errorf("failed to close multipart writer: %w", err)
 		}

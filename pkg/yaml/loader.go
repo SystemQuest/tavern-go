@@ -137,6 +137,17 @@ func (l *Loader) processCustomTags(node *goyaml.Node) {
 		return
 	}
 
+	// Check for !approx tag - for approximate floating point comparison
+	// Aligned with tavern-py commit 53690cf: Feature/approx numbers (#101)
+	if node.Tag == "!approx" {
+		// Mark as approximate float matcher
+		// !approx 3.14159 -> <<APPROX>>3.14159
+		node.Tag = "!!str"
+		node.Value = "<<APPROX>>" + node.Value
+		node.Kind = goyaml.ScalarNode
+		return
+	}
+
 	// Recursively process child nodes
 	for _, child := range node.Content {
 		l.processCustomTags(child)

@@ -213,3 +213,21 @@ stages:
         dtype: bool
     response:
       status_code: 200
+
+---
+
+test_name: Match a number approximately
+# Aligned with tavern-py commit 53690cf: Feature/approx numbers (#101)
+
+includes:
+  - !include common.yaml
+
+stages:
+  - name: Match pi approximately
+    request:
+      url: "{host}/pi"
+      method: GET
+    response:
+      status_code: 200
+      body:
+        pi: !approx 3.1415926

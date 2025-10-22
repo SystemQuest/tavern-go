@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"math"
 	"net/http"
 	"os"
 )
@@ -146,7 +147,7 @@ func fakeUploadFileHandler(w http.ResponseWriter, r *http.Request) {
 				http.Error(w, "Failed to open uploaded file", http.StatusInternalServerError)
 				return
 			}
-			defer file.Close()
+			defer func() { _ = file.Close() }()
 
 			// Save to /tmp
 			path := fmt.Sprintf("/tmp/%s", fileHeader.Filename)
@@ -155,7 +156,7 @@ func fakeUploadFileHandler(w http.ResponseWriter, r *http.Request) {
 				http.Error(w, "Failed to create destination file", http.StatusInternalServerError)
 				return
 			}
-			defer dst.Close()
+			defer func() { _ = dst.Close() }()
 
 			// Copy file content
 			_, err = io.Copy(dst, file)
@@ -287,6 +288,23 @@ func expectDtypeHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
+// Pi endpoint - returns the mathematical constant pi
+// Aligned with tavern-py commit 53690cf: Feature/approx numbers (#101)
+func piHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	response := map[string]interface{}{
+		"pi": math.Pi,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(response)
+}
+
 func main() {
 	// Register handlers
 	http.HandleFunc("/token", tokenHandler)
@@ -300,6 +318,7 @@ func main() {
 	http.HandleFunc("/bool_test", boolTestHandler)
 	http.HandleFunc("/echo", echoHandler)
 	http.HandleFunc("/expect_dtype", expectDtypeHandler)
+	http.HandleFunc("/pi", piHandler)
 
 	// Start server
 	port := 5000

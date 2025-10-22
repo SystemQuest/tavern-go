@@ -5,8 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 
 	"github.com/sirupsen/logrus"
@@ -408,6 +410,50 @@ func (v *RestValidator) validateBlock(blockName string, actual interface{}, expe
 						blockName, key, actualVal, actualVal))
 				} else {
 					v.logger.Debugf("%s.%s: actual value = '%v' - matches !anystr", blockName, key, actualVal)
+				}
+				continue
+			}
+			// Check for !approx matcher - approximate float comparison
+			// Aligned with tavern-py commit 53690cf: Feature/approx numbers (#101)
+			if strings.HasPrefix(expectedStr, "<<APPROX>>") {
+				expectedValueStr := strings.TrimPrefix(expectedStr, "<<APPROX>>")
+				expectedFloat, err := strconv.ParseFloat(expectedValueStr, 64)
+				if err != nil {
+					v.addError(fmt.Sprintf("%s.%s: invalid !approx value '%s': %v", blockName, key, expectedValueStr, err))
+					continue
+				}
+
+				// Convert actual value to float64
+				var actualFloat float64
+				switch val := actualVal.(type) {
+				case float64:
+					actualFloat = val
+				case float32:
+					actualFloat = float64(val)
+				case int:
+					actualFloat = float64(val)
+				case int64:
+					actualFloat = float64(val)
+				case int32:
+					actualFloat = float64(val)
+				default:
+					v.addError(fmt.Sprintf("%s.%s: expected numeric type for !approx, got '%v' (type: %T)",
+						blockName, key, actualVal, actualVal))
+					continue
+				}
+
+				// Use relative and absolute tolerance (similar to pytest.approx defaults)
+				// Default: rel_tol=1e-6, abs_tol=1e-12
+				relTol := 1e-6
+				absTol := 1e-12
+				tolerance := math.Max(relTol*math.Abs(expectedFloat), absTol)
+
+				if math.Abs(actualFloat-expectedFloat) <= tolerance {
+					v.logger.Debugf("%s.%s: actual value = '%v' approximately matches expected '%v' (tolerance: %e)",
+						blockName, key, actualFloat, expectedFloat, tolerance)
+				} else {
+					v.addError(fmt.Sprintf("%s.%s: expected approximately '%v', got '%v' (difference: %e, tolerance: %e)",
+						blockName, key, expectedFloat, actualFloat, math.Abs(actualFloat-expectedFloat), tolerance))
 				}
 				continue
 			}
