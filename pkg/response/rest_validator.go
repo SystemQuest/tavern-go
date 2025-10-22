@@ -246,15 +246,11 @@ func (v *RestValidator) Verify(resp *http.Response) (map[string]interface{}, err
 			if err != nil {
 				v.addError(fmt.Sprintf("failed to save with extension: %v", err))
 			} else {
-				// Extension returns {extensionName: {key: value, ...}}
-				// For validate_regex, it returns {"regex": {"token": "..."}}
-				// We need to flatten and merge these nested values directly into saved
-				for _, nestedValues := range extSaved {
-					if nestedMap, ok := nestedValues.(map[string]interface{}); ok {
-						for k, v := range nestedMap {
-							saved[k] = v
-						}
-					}
+				// Top-level $ext returns {extensionName: {key: value, ...}}
+				// For validate_regex, it returns {"regex": {"token": "...", "url": "..."}}
+				// Keep the nested structure so variables are accessed as "regex.token"
+				for k, v := range extSaved {
+					saved[k] = v
 				}
 			}
 		}

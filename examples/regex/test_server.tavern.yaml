@@ -16,7 +16,7 @@ stages:
         $ext:
           function: tavern.testutils.helpers:validate_regex
           extra_kwargs:
-            expression: '<a href=\".*\">'
+            expression: '<a src=\".*\">'
 
   # Stage 2: Extract named groups from regex
   - name: save groups
@@ -29,7 +29,7 @@ stages:
         $ext:
           function: tavern.testutils.helpers:validate_regex
           extra_kwargs:
-            expression: '<a href=\"(?P<url>.*?)\?token=(?P<token>.*?)\">'
+            expression: '<a src=\"(?P<url>.*?)\?token=(?P<token>.*?)\">'
 
   # Stage 3: Use the extracted values in a subsequent request
   - name: send saved
