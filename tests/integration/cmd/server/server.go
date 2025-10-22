@@ -3,8 +3,10 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
+	"os"
 )
 
 // Token endpoint - returns HTML with a link containing a token
@@ -101,6 +103,59 @@ func nestedListHandler(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewEncoder(w).Encode(response)
 }
 
+// File upload endpoint - receives files and saves them temporarily
+func fakeUploadFileHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Parse multipart form
+	err := r.ParseMultipartForm(10 << 20) // 10 MB max
+	if err != nil {
+		http.Error(w, "Failed to parse multipart form", http.StatusBadRequest)
+		return
+	}
+
+	// Check if files were provided
+	if r.MultipartForm == nil || len(r.MultipartForm.File) == 0 {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	// Process each uploaded file
+	for key := range r.MultipartForm.File {
+		fileHeaders := r.MultipartForm.File[key]
+		for _, fileHeader := range fileHeaders {
+			// Open the uploaded file
+			file, err := fileHeader.Open()
+			if err != nil {
+				http.Error(w, "Failed to open uploaded file", http.StatusInternalServerError)
+				return
+			}
+			defer file.Close()
+
+			// Save to /tmp
+			path := fmt.Sprintf("/tmp/%s", fileHeader.Filename)
+			dst, err := os.Create(path)
+			if err != nil {
+				http.Error(w, "Failed to create destination file", http.StatusInternalServerError)
+				return
+			}
+			defer dst.Close()
+
+			// Copy file content
+			_, err = io.Copy(dst, file)
+			if err != nil {
+				http.Error(w, "Failed to save file", http.StatusInternalServerError)
+				return
+			}
+		}
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
 // Nested/again endpoint - returns simple OK status
 func nestedAgainHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
@@ -124,6 +179,7 @@ func main() {
 	http.HandleFunc("/fake_dictionary", fakeDictionaryHandler)
 	http.HandleFunc("/fake_list", fakeListHandler)
 	http.HandleFunc("/nested_list", nestedListHandler)
+	http.HandleFunc("/fake_upload_file", fakeUploadFileHandler)
 	http.HandleFunc("/nested/again", nestedAgainHandler)
 
 	// Start server

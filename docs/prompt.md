@@ -7,4 +7,4 @@
 Last:
 https://github.com/taverntesting/tavern/commits/master/?before=bf1fe6c08c389fd475ac9608bec514342bb72d7f+861
 
-Make a nice representation for type setinels
+Add more in depth integration tests for matching arbitrary return values

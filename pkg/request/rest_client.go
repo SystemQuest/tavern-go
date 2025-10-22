@@ -6,9 +6,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"mime/multipart"
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
+	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -238,7 +241,46 @@ func (c *RestClient) buildRequest(spec schema.RequestSpec) (*http.Request, error
 	var body io.Reader
 	var contentType string
 
-	if spec.JSON != nil {
+	// Handle file uploads with multipart/form-data
+	if len(spec.Files) > 0 {
+		// Use multipart writer for file uploads
+		bodyBuf := &bytes.Buffer{}
+		writer := multipart.NewWriter(bodyBuf)
+
+		// Add each file to the multipart form
+		for fieldName, filePath := range spec.Files {
+			// Open the file
+			file, err := os.Open(filePath)
+			if err != nil {
+				return nil, fmt.Errorf("failed to open file %s: %w", filePath, err)
+			}
+			defer file.Close()
+
+			// Get file name from path
+			fileName := filepath.Base(filePath)
+
+			// Create form file
+			part, err := writer.CreateFormFile(fieldName, fileName)
+			if err != nil {
+				file.Close()
+				return nil, fmt.Errorf("failed to create form file: %w", err)
+			}
+
+			// Copy file content
+			if _, err := io.Copy(part, file); err != nil {
+				file.Close()
+				return nil, fmt.Errorf("failed to copy file content: %w", err)
+			}
+		}
+
+		// Close multipart writer
+		if err := writer.Close(); err != nil {
+			return nil, fmt.Errorf("failed to close multipart writer: %w", err)
+		}
+
+		body = bodyBuf
+		contentType = writer.FormDataContentType()
+	} else if spec.JSON != nil {
 		jsonData, err := json.Marshal(spec.JSON)
 		if err != nil {
 			return nil, fmt.Errorf("failed to marshal JSON: %w", err)

@@ -71,7 +71,12 @@
                 "type": "object"
               },
               "files": {
-                "type": "object"
+                "type": "object",
+                "description": "Files to upload as multipart/form-data",
+                "additionalProperties": {
+                  "type": "string",
+                  "description": "File path to upload"
+                }
               },
               "cookies": {
                 "type": "object"
