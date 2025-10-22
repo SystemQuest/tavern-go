@@ -324,19 +324,28 @@ func (c *RestClient) buildRequest(spec schema.RequestSpec) (*http.Request, error
 		req.Header.Set("Content-Type", contentType)
 	}
 
-	// Set headers
+	// Set headers (aligned with tavern-py commit df3ce0b)
 	if spec.Headers != nil {
-		for k, v := range spec.Headers {
-			req.Header.Set(k, v)
-		}
-	}
-
-	// Override content-type if explicitly set
-	if spec.Headers != nil {
-		for k, v := range spec.Headers {
-			if strings.ToLower(k) == "content-type" {
-				req.Header.Set("Content-Type", v)
-				break
+		// When sending files, ignore user-specified content-type header
+		// The multipart/form-data boundary must be set by the multipart writer
+		if len(spec.Files) > 0 {
+			// Check if user tried to set content-type and warn
+			for k := range spec.Headers {
+				if strings.ToLower(k) == "content-type" {
+					logrus.Warning("Tried to specify a content-type header while sending a file - this will be ignored")
+					break
+				}
+			}
+			// Set all headers except content-type
+			for k, v := range spec.Headers {
+				if strings.ToLower(k) != "content-type" {
+					req.Header.Set(k, v)
+				}
+			}
+		} else {
+			// Not sending files, set all headers including content-type override
+			for k, v := range spec.Headers {
+				req.Header.Set(k, v)
 			}
 		}
 	}
