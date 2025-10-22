@@ -6,3 +6,6 @@ variables:
   host: http://localhost:5000
   first_part: "nested"
   second_part: "{tavern.env_vars.SECOND_URL_PART}"
+  # Type conversion tests (aligned with tavern-py commit 169090c)
+  v_int: 123
+  v_float: 4.56

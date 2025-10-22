@@ -135,3 +135,63 @@ stages:
           - a
           - !anystr
           - !anything
+
+---
+
+test_name: Test saving and converting types between stages
+
+includes:
+  - !include common.yaml
+
+stages:
+  - name: Convert and post a float, then save the echoed value
+    request:
+      url: "{host}/echo"
+      method: POST
+      json:
+        value: !float "{v_int}"
+    response:
+      status_code: 200
+      body:
+        value: 123
+      save:
+        body:
+          saved_float_value: value
+
+  - name: Use saved value with type conversion
+    request:
+      url: "{host}/echo"
+      method: POST
+      json:
+        original: "{saved_float_value}"
+        converted: !int "{saved_float_value}"
+    response:
+      status_code: 200
+      body:
+        original: "123"
+        converted: 123
+
+  - name: Save and convert integer value
+    request:
+      url: "{host}/echo"
+      method: POST
+      json:
+        int_value: !int "456"
+    response:
+      status_code: 200
+      body:
+        int_value: 456
+      save:
+        body:
+          saved_int: int_value
+
+  - name: Use saved int in next request
+    request:
+      url: "{host}/echo"
+      method: POST
+      json:
+        doubled: !int "{saved_int}"
+    response:
+      status_code: 200
+      body:
+        doubled: 456
