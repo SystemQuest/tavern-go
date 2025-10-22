@@ -195,3 +195,21 @@ stages:
       status_code: 200
       body:
         doubled: 456
+
+---
+
+test_name: Test bool type conversion
+
+includes:
+  - !include common.yaml
+
+stages:
+  - name: Convert bool from a formatted string
+    request:
+      url: "{host}/expect_dtype"
+      method: POST
+      json:
+        value: !bool "{v_bool}"
+        dtype: bool
+    response:
+      status_code: 200

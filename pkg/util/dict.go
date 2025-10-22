@@ -16,7 +16,10 @@ func FormatKeys(val interface{}, variables map[string]interface{}) (interface{},
 		if err != nil {
 			return nil, err
 		}
-		return applyTypeConversion(formatted)
+		result, err := applyTypeConversion(formatted)
+		// DEBUG: Uncomment for debugging
+		// fmt.Printf("DEBUG FormatKeys: input=%q, formatted=%q, result=%v (type=%T)\n", v, formatted, result, result)
+		return result, err
 	case map[string]interface{}:
 		return formatMap(v, variables)
 	case []interface{}:
@@ -135,6 +138,17 @@ func applyTypeConversion(s string) (interface{}, error) {
 		}
 		// For string type, just return the formatted value as string
 		return value, nil
+	}
+
+	// Check for !bool or !anybool marker (aligned with tavern-py commit 963bdf6)
+	if strings.HasPrefix(s, "<<BOOL>>") {
+		value := strings.TrimPrefix(s, "<<BOOL>>")
+		// If value is empty, it's a type matcher (!anybool), not a type converter
+		// Keep the marker for validation
+		if value == "" {
+			return s, nil
+		}
+		return BoolConverter(value)
 	}
 
 	// No type conversion needed

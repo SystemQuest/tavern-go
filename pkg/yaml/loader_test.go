@@ -297,3 +297,59 @@ stages:
 	require.True(t, hasFeatureA, "feature_a should exist")
 	assert.Equal(t, "<<BOOL>>", featureA, "!anybool should be converted to <<BOOL>> marker")
 }
+
+// TestLoader_BoolTag tests !bool tag support (aligned with tavern-py commit 963bdf6)
+func TestLoader_BoolTag(t *testing.T) {
+	tmpDir := t.TempDir()
+	testFile := filepath.Join(tmpDir, "test_bool.yaml")
+
+	content := `---
+test_name: Test bool tag
+
+stages:
+  - name: test bool conversion
+    request:
+      url: http://localhost:5000/echo
+      method: POST
+      json:
+        enabled: !bool "true"
+        disabled: !bool "false"
+        one: !bool "1"
+        zero: !bool "0"
+    response:
+      status_code: 200
+`
+
+	err := os.WriteFile(testFile, []byte(content), 0644)
+	require.NoError(t, err)
+
+	loader := NewLoader(tmpDir)
+	tests, err := loader.Load(testFile)
+	require.NoError(t, err)
+	require.Len(t, tests, 1)
+
+	test := tests[0]
+	assert.Equal(t, "Test bool tag", test.TestName)
+
+	require.Len(t, test.Stages, 1)
+	stage := test.Stages[0]
+
+	reqJSON, ok := stage.Request.JSON.(map[string]interface{})
+	require.True(t, ok, "JSON should be a map")
+
+	enabled, hasEnabled := reqJSON["enabled"]
+	require.True(t, hasEnabled, "enabled should exist")
+	assert.Equal(t, "<<BOOL>>true", enabled, "!bool \"true\" should be converted to <<BOOL>>true marker")
+
+	disabled, hasDisabled := reqJSON["disabled"]
+	require.True(t, hasDisabled, "disabled should exist")
+	assert.Equal(t, "<<BOOL>>false", disabled, "!bool \"false\" should be converted to <<BOOL>>false marker")
+
+	one, hasOne := reqJSON["one"]
+	require.True(t, hasOne, "one should exist")
+	assert.Equal(t, "<<BOOL>>1", one, "!bool \"1\" should be converted to <<BOOL>>1 marker")
+
+	zero, hasZero := reqJSON["zero"]
+	require.True(t, hasZero, "zero should exist")
+	assert.Equal(t, "<<BOOL>>0", zero, "!bool \"0\" should be converted to <<BOOL>>0 marker")
+}

@@ -51,7 +51,7 @@ func (l *Loader) Load(filename string) ([]*schema.TestSpec, error) {
 	return tests, nil
 }
 
-// processCustomTags recursively processes custom YAML tags like !anything, !int, !anyint, !float, !anyfloat, !str, !anystr, !anybool, !include
+// processCustomTags recursively processes custom YAML tags like !anything, !int, !anyint, !float, !anyfloat, !str, !anystr, !bool, !anybool, !include
 func (l *Loader) processCustomTags(node *goyaml.Node) {
 	if node == nil {
 		return
@@ -126,11 +126,13 @@ func (l *Loader) processCustomTags(node *goyaml.Node) {
 		return
 	}
 
-	// Check for !anybool tag (aligned with tavern-py commit 3ff6b3c)
-	if node.Tag == "!anybool" {
-		// Mark as type matcher for boolean
+	// Check for !bool or !anybool tag
+	if node.Tag == "!bool" || node.Tag == "!anybool" {
+		// Mark as type convert/matcher token for boolean
+		// !bool "true" -> <<BOOL>>true (type converter)
+		// !anybool -> <<BOOL>> (type matcher)
 		node.Tag = "!!str"
-		node.Value = "<<BOOL>>"
+		node.Value = "<<BOOL>>" + node.Value
 		node.Kind = goyaml.ScalarNode
 		return
 	}

@@ -41,6 +41,17 @@ func FloatConverter(s string) (interface{}, error) {
 	return val, nil
 }
 
+// BoolConverter converts a string to bool
+// Accepts: "1", "t", "T", "true", "TRUE", "True", "0", "f", "F", "false", "FALSE", "False"
+// Aligned with tavern-py commit 963bdf6
+func BoolConverter(s string) (interface{}, error) {
+	val, err := strconv.ParseBool(s)
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert to bool: %w", err)
+	}
+	return val, nil
+}
+
 // IsTypeConvertToken checks if a value is a TypeConvertToken
 func IsTypeConvertToken(val interface{}) bool {
 	_, ok := val.(*TypeConvertToken)

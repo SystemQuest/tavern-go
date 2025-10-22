@@ -9,3 +9,4 @@ variables:
   # Type conversion tests (aligned with tavern-py commit 169090c)
   v_int: 123
   v_float: 4.56
+  v_bool: false

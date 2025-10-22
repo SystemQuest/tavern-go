@@ -232,6 +232,61 @@ func echoHandler(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewEncoder(w).Encode(body)
 }
 
+// ExpectDtype endpoint - validates that the received value has the expected data type
+// Aligned with tavern-py commit 963bdf6
+func expectDtypeHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var body map[string]interface{}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		http.Error(w, "Invalid JSON", http.StatusBadRequest)
+		return
+	}
+
+	value, hasValue := body["value"]
+	dtype, hasDtype := body["dtype"]
+
+	if !hasValue || !hasDtype {
+		http.Error(w, "Missing value or dtype", http.StatusBadRequest)
+		return
+	}
+
+	dtypeStr, ok := dtype.(string)
+	if !ok {
+		http.Error(w, "dtype must be a string", http.StatusBadRequest)
+		return
+	}
+
+	// Check if the value type matches the expected dtype
+	var actualType string
+	switch value.(type) {
+	case bool:
+		actualType = "bool"
+	case float64:
+		// JSON numbers are always float64 in Go
+		// Check if it's actually an int
+		if f, ok := value.(float64); ok && f == float64(int64(f)) {
+			actualType = "int"
+		} else {
+			actualType = "float"
+		}
+	case string:
+		actualType = "str"
+	default:
+		actualType = "unknown"
+	}
+
+	if actualType != dtypeStr {
+		http.Error(w, fmt.Sprintf("Type mismatch: expected %s, got %s", dtypeStr, actualType), http.StatusBadRequest)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
 func main() {
 	// Register handlers
 	http.HandleFunc("/token", tokenHandler)
@@ -244,6 +299,7 @@ func main() {
 	http.HandleFunc("/nested/again", nestedAgainHandler)
 	http.HandleFunc("/bool_test", boolTestHandler)
 	http.HandleFunc("/echo", echoHandler)
+	http.HandleFunc("/expect_dtype", expectDtypeHandler)
 
 	// Start server
 	port := 5000
