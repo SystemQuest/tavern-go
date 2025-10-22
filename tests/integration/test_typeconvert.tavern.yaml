@@ -1,0 +1,106 @@
+---
+# Test type conversion tags (!int and !float) in requests
+# Aligned with tavern-py commit 897c9d1
+
+test_name: Test integer conversion from string
+
+includes:
+  - !include common.yaml
+
+stages:
+  - name: Convert integer from a string
+    request:
+      url: "{host}/echo"
+      method: POST
+      json:
+        value: !int "123"
+        expected_type: "int"
+    response:
+      status_code: 200
+      body:
+        value: 123
+
+---
+
+test_name: Test float conversion from string
+
+includes:
+  - !include common.yaml
+
+stages:
+  - name: Convert float from a string
+    request:
+      url: "{host}/echo"
+      method: POST
+      json:
+        value: !float "4.56"
+        expected_type: "float"
+    response:
+      status_code: 200
+      body:
+        value: 4.56
+
+---
+
+test_name: Test multiple type conversions
+
+includes:
+  - !include common.yaml
+
+stages:
+  - name: Convert multiple types in one request
+    request:
+      url: "{host}/echo"
+      method: POST
+      json:
+        int_value: !int "999"
+        float_value: !float "3.14159"
+        string_value: "hello"
+    response:
+      status_code: 200
+      body:
+        int_value: 999
+        float_value: 3.14159
+        string_value: "hello"
+
+---
+
+test_name: Test type conversion with nested structures
+
+includes:
+  - !include common.yaml
+
+stages:
+  - name: Convert types in nested objects
+    request:
+      url: "{host}/echo"
+      method: POST
+      json:
+        data:
+          count: !int "42"
+          price: !float "19.99"
+          name: "product"
+    response:
+      status_code: 200
+      body:
+        data:
+          count: 42
+          price: 19.99
+          name: "product"
+
+  - name: Convert types in arrays
+    request:
+      url: "{host}/echo"
+      method: POST
+      json:
+        values:
+          - !int "1"
+          - !int "2"
+          - !float "3.5"
+    response:
+      status_code: 200
+      body:
+        values:
+          - 1
+          - 2
+          - 3.5

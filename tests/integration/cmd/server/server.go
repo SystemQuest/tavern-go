@@ -213,6 +213,25 @@ func boolTestHandler(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewEncoder(w).Encode(response)
 }
 
+// Echo endpoint - returns the posted JSON body for testing type conversions
+// Aligned with tavern-py commit 897c9d1 (testing type conversion in requests)
+func echoHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var body interface{}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		http.Error(w, "Failed to decode JSON", http.StatusBadRequest)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(body)
+}
+
 func main() {
 	// Register handlers
 	http.HandleFunc("/token", tokenHandler)
@@ -224,6 +243,7 @@ func main() {
 	http.HandleFunc("/fake_upload_file", fakeUploadFileHandler)
 	http.HandleFunc("/nested/again", nestedAgainHandler)
 	http.HandleFunc("/bool_test", boolTestHandler)
+	http.HandleFunc("/echo", echoHandler)
 
 	// Start server
 	port := 5000

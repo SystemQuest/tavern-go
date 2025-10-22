@@ -37,6 +37,8 @@ test:
 	@TEST_HOST=http://localhost:5000 SECOND_URL_PART=again ../../bin/tavern test_regex.tavern.yaml
 	@echo "Testing anybool type matcher..."
 	@TEST_HOST=http://localhost:5000 SECOND_URL_PART=again ../../bin/tavern test_anybool.tavern.yaml
+	@echo "Testing type conversions..."
+	@TEST_HOST=http://localhost:5000 SECOND_URL_PART=again ../../bin/tavern test_typeconvert.tavern.yaml
 	@echo "✅ All tests passed!"
 
 # Run tests with verbose output
@@ -58,6 +60,8 @@ test-verbose:
 	@TEST_HOST=http://localhost:5000 SECOND_URL_PART=again ../../bin/tavern -v test_regex.tavern.yaml
 	@echo "Testing anybool type matcher..."
 	@TEST_HOST=http://localhost:5000 SECOND_URL_PART=again ../../bin/tavern -v test_anybool.tavern.yaml
+	@echo "Testing type conversions..."
+	@TEST_HOST=http://localhost:5000 SECOND_URL_PART=again ../../bin/tavern -v test_typeconvert.tavern.yaml
 
 # Quick test - start server in background, run tests, stop server
 quick-test: build
