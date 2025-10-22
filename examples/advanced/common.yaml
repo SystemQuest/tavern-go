@@ -1,7 +1,11 @@
 ---
 # Common configuration for advanced tests
-name: common
-description: Common variables and configuration
+# Aligned with tavern-py commit 2a3725b - nested variables support
+name: test includes
+description: used for testing against local server
 
 variables:
-  host: http://localhost:5000
+  service:
+    proto: http
+    host: localhost
+    port: 5000
