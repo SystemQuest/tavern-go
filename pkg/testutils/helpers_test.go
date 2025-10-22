@@ -155,3 +155,66 @@ func TestValidateRegex_MultipleGroups(t *testing.T) {
 	assert.Equal(t, "30", regexMap["age"])
 	assert.Equal(t, "NYC", regexMap["city"])
 }
+
+// TestValidateRegex_Header tests regex validation against response headers
+// Aligned with tavern-py commit 7714ad7
+func TestValidateRegex_Header(t *testing.T) {
+	// Test validating against a response header
+	resp := &http.Response{
+		Header: http.Header{
+			"Location":     []string{"https://example.com/user/12345/profile"},
+			"Content-Type": []string{"application/json"},
+		},
+		Body: io.NopCloser(bytes.NewBufferString(`{"status":"ok"}`)),
+	}
+
+	args := map[string]interface{}{
+		"expression": `user/(?P<user_id>\d+)/profile`,
+		"header":     "Location",
+	}
+
+	result, err := ValidateRegex(resp, args)
+	require.NoError(t, err)
+
+	regexMap := result["regex"].(map[string]interface{})
+	assert.Equal(t, "12345", regexMap["user_id"])
+}
+
+// TestValidateRegex_HeaderNotFound tests error when specified header doesn't exist
+func TestValidateRegex_HeaderNotFound(t *testing.T) {
+	resp := &http.Response{
+		Header: http.Header{
+			"Content-Type": []string{"application/json"},
+		},
+		Body: io.NopCloser(bytes.NewBufferString(`{"status":"ok"}`)),
+	}
+
+	args := map[string]interface{}{
+		"expression": `token=(?P<token>.*)`,
+		"header":     "X-Auth-Token", // This header doesn't exist
+	}
+
+	result, err := ValidateRegex(resp, args)
+	assert.Error(t, err)
+	assert.Nil(t, result)
+	assert.Contains(t, err.Error(), "header 'X-Auth-Token' not found")
+}
+
+// TestValidateRegex_HeaderNoMatch tests when regex doesn't match header value
+func TestValidateRegex_HeaderNoMatch(t *testing.T) {
+	resp := &http.Response{
+		Header: http.Header{
+			"Location": []string{"https://example.com/home"},
+		},
+		Body: io.NopCloser(bytes.NewBufferString(`{"status":"ok"}`)),
+	}
+
+	args := map[string]interface{}{
+		"expression": `user/(?P<user_id>\d+)`, // Won't match the URL
+		"header":     "Location",
+	}
+
+	result, err := ValidateRegex(resp, args)
+	assert.Error(t, err)
+	assert.Nil(t, result)
+}
