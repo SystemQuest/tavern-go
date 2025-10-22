@@ -497,3 +497,89 @@ func TestClient_VerifyDefault(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 }
+
+// TestClient_NestedVariablesInURL tests nested variable substitution in URL
+// Aligned with tavern-py commit 2a3725b: tests/unit/test_request.py
+// This mirrors the Python test where URL is constructed from nested variables:
+// "{request.prefix:s}{request.url:s}" with variables like request.prefix="www.", request.url="google.com"
+func TestClient_NestedVariablesInURL(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
+	}))
+	defer server.Close()
+
+	client := NewRestClient(&Config{
+		Variables: map[string]interface{}{
+			"request": map[string]interface{}{
+				"prefix": "www.",
+				"url":    "google.com",
+			},
+			"test_auth_token": "abc123",
+			"code":            "def456",
+			"callback_url":    "www.yahoo.co.uk",
+		},
+	})
+
+	// Test nested variables in URL - mimics Python test: "{request.prefix:s}{request.url:s}"
+	spec := schema.RequestSpec{
+		URL:    server.URL + "/{request.prefix}{request.url}", // Use nested variables
+		Method: "POST",
+		Headers: map[string]string{
+			"Content-Type":  "application/x-www-form-urlencoded",
+			"Authorization": "Basic {test_auth_token}",
+		},
+		Data: map[string]interface{}{
+			"a_thing": "authorization_code",
+			"code":    "{code}",
+			"url":     "{callback_url}",
+		},
+	}
+
+	resp, err := client.Execute(spec)
+
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+}
+
+// TestClient_NestedVariablesInDataArray tests nested variable substitution in arrays
+// Aligned with tavern-py commit 2a3725b: test_array_substitution in test_request.py
+func TestClient_NestedVariablesInDataArray(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, _ := io.ReadAll(r.Body)
+		var data map[string]interface{}
+		json.Unmarshal(body, &data)
+
+		// Verify array substitution worked
+		arr, ok := data["array"].([]interface{})
+		assert.True(t, ok)
+		assert.Equal(t, 2, len(arr))
+		assert.Equal(t, "def456", arr[0])
+		assert.Equal(t, "def456", arr[1])
+
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	client := NewRestClient(&Config{
+		Variables: map[string]interface{}{
+			"code": "def456",
+		},
+	})
+
+	spec := schema.RequestSpec{
+		URL:    server.URL,
+		Method: "POST",
+		JSON: map[string]interface{}{
+			"array": []interface{}{
+				"{code}",
+				"{code}",
+			},
+		},
+	}
+
+	resp, err := client.Execute(spec)
+
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+}
