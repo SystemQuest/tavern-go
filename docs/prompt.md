@@ -7,4 +7,5 @@
 Last:
 https://github.com/taverntesting/tavern/commits/master/?before=bf1fe6c08c389fd475ac9608bec514342bb72d7f+791
 
-Feature/plugins (#79)
+Cherry pick internal _xfail from branch
+

@@ -31,6 +31,7 @@ type Config struct {
 	Variables    map[string]interface{}
 	Verbose      bool
 	Debug        bool
+	SkipXfail    bool // Skip tests marked with _xfail (aligned with tavern-py commit 369a4bb)
 }
 
 // NewRunner creates a new test runner
@@ -93,6 +94,12 @@ func (r *Runner) RunFile(filename string) error {
 	var firstError error
 	for i, test := range tests {
 		r.logger.Infof("Running test %d/%d: %s", i+1, len(tests), test.TestName)
+
+		// Skip tests with _xfail when SkipXfail is enabled (aligned with tavern-py commit 369a4bb)
+		if r.config.SkipXfail && test.Xfail != "" {
+			r.logger.Infof("_xfail does not work with tavern-go CLI when --skip-xfail is set, skipping test '%s'", test.TestName)
+			continue
+		}
 
 		// Track xfail mode (aligned with tavern-py commit 3838566)
 		xfail := test.Xfail

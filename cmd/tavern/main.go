@@ -16,6 +16,7 @@ var (
 	verbose    bool
 	debug      bool
 	validate   bool
+	skipXfail  bool // Skip tests marked with _xfail (aligned with tavern-py commit 369a4bb)
 )
 
 func main() {
@@ -47,6 +48,7 @@ func init() {
 	rootCmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "Verbose output")
 	rootCmd.Flags().BoolVarP(&debug, "debug", "d", false, "Debug mode")
 	rootCmd.Flags().BoolVar(&validate, "validate", false, "Validate test files without running")
+	rootCmd.Flags().BoolVar(&skipXfail, "skip-xfail", false, "Skip tests marked with _xfail (aligned with tavern-py commit 369a4bb)")
 }
 
 func runTests(cmd *cobra.Command, args []string) error {
@@ -54,9 +56,10 @@ func runTests(cmd *cobra.Command, args []string) error {
 
 	// Create runner config
 	config := &core.Config{
-		BaseDir: ".",
-		Verbose: verbose,
-		Debug:   debug,
+		BaseDir:   ".",
+		Verbose:   verbose,
+		Debug:     debug,
+		SkipXfail: skipXfail,
 	}
 
 	// Create runner
