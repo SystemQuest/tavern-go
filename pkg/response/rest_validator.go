@@ -46,7 +46,7 @@ func NewRestValidator(name string, spec schema.ResponseSpec, config *Config) *Re
 	if spec.StatusCode != nil {
 		// Check single code or first code in list
 		codeToCheck := spec.StatusCode.Single
-		if spec.StatusCode.Multiple != nil && len(spec.StatusCode.Multiple) > 0 {
+		if len(spec.StatusCode.Multiple) > 0 {
 			codeToCheck = spec.StatusCode.Multiple[0]
 		}
 		if codeToCheck != 0 && http.StatusText(codeToCheck) == "" {
