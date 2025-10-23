@@ -15,7 +15,7 @@ import (
 // TestValidator_AnythingMarkerDebugLog tests that debug logs are generated for !anything matches
 func TestValidator_AnythingMarkerDebugLog(t *testing.T) {
 	spec := schema.ResponseSpec{
-		StatusCode: 200,
+		StatusCode: &schema.StatusCode{Single: 200},
 		Body: map[string]interface{}{
 			"user.id":   "<<ANYTHING>>",
 			"user.name": "John",

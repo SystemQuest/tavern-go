@@ -30,15 +30,15 @@ func (v *ShellValidator) Verify(response interface{}) (map[string]interface{}, e
 
 	saved := make(map[string]interface{})
 
-	// Validate exit code (default to 0)
+	// Validate exit code (default to 0) - aligned with tavern-py commit af74465
 	expectedExitCode := v.spec.StatusCode
-	if expectedExitCode == 0 {
-		expectedExitCode = 0 // Success by default
+	if expectedExitCode == nil || expectedExitCode.IsZero() {
+		expectedExitCode = &schema.StatusCode{Single: 0} // Success by default
 	}
 
-	if shellResp.ExitCode != expectedExitCode {
-		v.AddError(fmt.Sprintf("exit code mismatch: expected %d, got %d",
-			expectedExitCode, shellResp.ExitCode))
+	if !expectedExitCode.Contains(shellResp.ExitCode) {
+		v.AddError(fmt.Sprintf("exit code mismatch: expected %s, got %d",
+			expectedExitCode.String(), shellResp.ExitCode))
 	}
 
 	// Validate stdout (stored in Body)

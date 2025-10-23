@@ -105,7 +105,9 @@ stages:
 	assert.Equal(t, "Get request", test.Stages[0].Name)
 	assert.Equal(t, "http://example.com", test.Stages[0].Request.URL)
 	assert.Equal(t, "GET", test.Stages[0].Request.Method)
-	assert.Equal(t, 200, test.Stages[0].Response.StatusCode)
+	require.NotNil(t, test.Stages[0].Response.StatusCode)
+	assert.Equal(t, 200, test.Stages[0].Response.StatusCode.Single)
+	assert.Nil(t, test.Stages[0].Response.StatusCode.Multiple)
 }
 
 func TestLoader_TypeConvertTags(t *testing.T) {

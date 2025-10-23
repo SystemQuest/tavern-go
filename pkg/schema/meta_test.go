@@ -28,7 +28,7 @@ func TestValidateMetaField(t *testing.T) {
 							Meta: []string{"clear_session_cookies"},
 						},
 						Response: &ResponseSpec{
-							StatusCode: 200,
+							StatusCode: &StatusCode{Single: 200},
 						},
 					},
 				},
@@ -47,7 +47,7 @@ func TestValidateMetaField(t *testing.T) {
 							Meta: []string{"clear_session_cookies", "some_other_directive"},
 						},
 						Response: &ResponseSpec{
-							StatusCode: 200,
+							StatusCode: &StatusCode{Single: 200},
 						},
 					},
 				},
@@ -66,7 +66,7 @@ func TestValidateMetaField(t *testing.T) {
 							Meta: []string{},
 						},
 						Response: &ResponseSpec{
-							StatusCode: 200,
+							StatusCode: &StatusCode{Single: 200},
 						},
 					},
 				},
@@ -84,7 +84,7 @@ func TestValidateMetaField(t *testing.T) {
 							URL: "http://example.com",
 						},
 						Response: &ResponseSpec{
-							StatusCode: 200,
+							StatusCode: &StatusCode{Single: 200},
 						},
 					},
 				},

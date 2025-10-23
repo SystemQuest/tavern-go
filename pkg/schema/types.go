@@ -1,5 +1,12 @@
 package schema
 
+import (
+	"encoding/json"
+	"fmt"
+	"strconv"
+	"strings"
+)
+
 // TestSpec represents a complete test specification
 type TestSpec struct {
 	TestName string    `yaml:"test_name" json:"test_name"`
@@ -70,9 +77,104 @@ type AuthSpec struct {
 	Token    string `yaml:"token,omitempty" json:"token,omitempty"`
 }
 
+// StatusCode represents expected HTTP status code(s) - can be a single int or a list of ints
+// Aligned with tavern-py commit af74465
+type StatusCode struct {
+	Single   int   // Single status code
+	Multiple []int // Multiple acceptable status codes
+}
+
+// UnmarshalYAML implements custom unmarshaling for StatusCode
+func (sc *StatusCode) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	// Try to unmarshal as single int first
+	var single int
+	if err := unmarshal(&single); err == nil {
+		sc.Single = single
+		sc.Multiple = nil
+		return nil
+	}
+
+	// Try to unmarshal as slice of ints
+	var multiple []int
+	if err := unmarshal(&multiple); err == nil {
+		sc.Single = 0
+		sc.Multiple = multiple
+		return nil
+	}
+
+	return fmt.Errorf("status_code must be an integer or a list of integers")
+}
+
+// UnmarshalJSON implements custom unmarshaling for StatusCode
+func (sc *StatusCode) UnmarshalJSON(data []byte) error {
+	// Try to unmarshal as single int first
+	var single int
+	if err := json.Unmarshal(data, &single); err == nil {
+		sc.Single = single
+		sc.Multiple = nil
+		return nil
+	}
+
+	// Try to unmarshal as slice of ints
+	var multiple []int
+	if err := json.Unmarshal(data, &multiple); err == nil {
+		sc.Single = 0
+		sc.Multiple = multiple
+		return nil
+	}
+
+	return fmt.Errorf("status_code must be an integer or a list of integers")
+}
+
+// MarshalYAML implements custom marshaling for StatusCode
+func (sc *StatusCode) MarshalYAML() (interface{}, error) {
+	if sc.Multiple != nil {
+		return sc.Multiple, nil
+	}
+	return sc.Single, nil
+}
+
+// MarshalJSON implements custom marshaling for StatusCode
+func (sc *StatusCode) MarshalJSON() ([]byte, error) {
+	if sc.Multiple != nil {
+		return json.Marshal(sc.Multiple)
+	}
+	return json.Marshal(sc.Single)
+}
+
+// Contains checks if the given status code matches the expected code(s)
+func (sc *StatusCode) Contains(code int) bool {
+	if sc.Multiple != nil {
+		for _, c := range sc.Multiple {
+			if c == code {
+				return true
+			}
+		}
+		return false
+	}
+	return sc.Single == code
+}
+
+// IsZero returns true if no status code is set
+func (sc *StatusCode) IsZero() bool {
+	return sc.Single == 0 && len(sc.Multiple) == 0
+}
+
+// String returns a string representation of the status code(s)
+func (sc *StatusCode) String() string {
+	if sc.Multiple != nil {
+		codes := make([]string, len(sc.Multiple))
+		for i, c := range sc.Multiple {
+			codes[i] = strconv.Itoa(c)
+		}
+		return "[" + strings.Join(codes, ", ") + "]"
+	}
+	return strconv.Itoa(sc.Single)
+}
+
 // ResponseSpec represents expected HTTP response
 type ResponseSpec struct {
-	StatusCode int                    `yaml:"status_code,omitempty" json:"status_code,omitempty"`
+	StatusCode *StatusCode            `yaml:"status_code,omitempty" json:"status_code,omitempty"`
 	Headers    map[string]interface{} `yaml:"headers,omitempty" json:"headers,omitempty"`
 	Body       interface{}            `yaml:"body,omitempty" json:"body,omitempty"`
 	Cookies    []string               `yaml:"cookies,omitempty" json:"cookies,omitempty"` // Expected cookie names

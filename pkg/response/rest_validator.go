@@ -42,9 +42,16 @@ func NewRestValidator(name string, spec schema.ResponseSpec, config *Config) *Re
 		}
 	}
 
-	// Warn if status code is not a standard HTTP code
-	if http.StatusText(spec.StatusCode) == "" {
-		logrus.Warnf("Unexpected status code '%d'", spec.StatusCode)
+	// Warn if status code is not a standard HTTP code (aligned with tavern-py commit af74465)
+	if spec.StatusCode != nil {
+		// Check single code or first code in list
+		codeToCheck := spec.StatusCode.Single
+		if spec.StatusCode.Multiple != nil && len(spec.StatusCode.Multiple) > 0 {
+			codeToCheck = spec.StatusCode.Multiple[0]
+		}
+		if codeToCheck != 0 && http.StatusText(codeToCheck) == "" {
+			logrus.Warnf("Unexpected status code '%d'", codeToCheck)
+		}
 	}
 
 	return &RestValidator{
@@ -126,16 +133,16 @@ func (v *RestValidator) Verify(resp *http.Response) (map[string]interface{}, err
 	// Restore body for further processing
 	resp.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
 
-	// Default expected status code to 200
+	// Default expected status code to 200 (aligned with tavern-py commit af74465)
 	expectedStatus := v.spec.StatusCode
-	if expectedStatus == 0 {
-		expectedStatus = 200
+	if expectedStatus == nil || expectedStatus.IsZero() {
+		expectedStatus = &schema.StatusCode{Single: 200}
 	}
 
-	// Verify status code
-	if resp.StatusCode != expectedStatus {
-		v.addError(fmt.Sprintf("status code mismatch: expected %d, got %d",
-			expectedStatus, resp.StatusCode))
+	// Verify status code - supports single or multiple acceptable codes
+	if !expectedStatus.Contains(resp.StatusCode) {
+		v.addError(fmt.Sprintf("status code mismatch: expected %s, got %d",
+			expectedStatus.String(), resp.StatusCode))
 	}
 
 	// Try to parse as JSON (support both objects and arrays)

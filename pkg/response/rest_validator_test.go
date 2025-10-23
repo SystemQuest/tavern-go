@@ -38,7 +38,7 @@ func createMockResponse(statusCode int, headers map[string]string, body interfac
 // TestValidator_SaveBodySimple tests saving a simple value from response body
 func TestValidator_SaveBodySimple(t *testing.T) {
 	spec := schema.ResponseSpec{
-		StatusCode: 200,
+		StatusCode: &schema.StatusCode{Single: 200},
 		Save: schema.NewRegularSave(&schema.SaveSpec{
 			Body: map[string]interface{}{
 				"test_code": "code",
@@ -64,7 +64,7 @@ func TestValidator_SaveBodySimple(t *testing.T) {
 // TestValidator_SaveBodyNested tests saving a nested value from response body
 func TestValidator_SaveBodyNested(t *testing.T) {
 	spec := schema.ResponseSpec{
-		StatusCode: 200,
+		StatusCode: &schema.StatusCode{Single: 200},
 		Save: schema.NewRegularSave(&schema.SaveSpec{
 			Body: map[string]interface{}{
 				"test_nested": "user.profile.name",
@@ -94,7 +94,7 @@ func TestValidator_SaveBodyNested(t *testing.T) {
 // TestValidator_SaveBodyArray tests saving an array element from response body
 func TestValidator_SaveBodyArray(t *testing.T) {
 	spec := schema.ResponseSpec{
-		StatusCode: 200,
+		StatusCode: &schema.StatusCode{Single: 200},
 		Save: schema.NewRegularSave(&schema.SaveSpec{
 			Body: map[string]interface{}{
 				"first_item": "items.0.name",
@@ -124,7 +124,7 @@ func TestValidator_SaveBodyArray(t *testing.T) {
 // TestValidator_SaveBodyFromArray tests saving from an array response body
 func TestValidator_SaveBodyFromArray(t *testing.T) {
 	spec := schema.ResponseSpec{
-		StatusCode: 200,
+		StatusCode: &schema.StatusCode{Single: 200},
 		Save: schema.NewRegularSave(&schema.SaveSpec{
 			Body: map[string]interface{}{
 				"first_user_id":   "0.id",
@@ -153,7 +153,7 @@ func TestValidator_SaveBodyFromArray(t *testing.T) {
 // TestValidator_SaveHeader tests saving a header value
 func TestValidator_SaveHeader(t *testing.T) {
 	spec := schema.ResponseSpec{
-		StatusCode: 200,
+		StatusCode: &schema.StatusCode{Single: 200},
 		Save: schema.NewRegularSave(&schema.SaveSpec{
 			Headers: map[string]string{
 				"next_location": "Location",
@@ -179,7 +179,7 @@ func TestValidator_SaveHeader(t *testing.T) {
 // TestValidator_SaveRedirectQueryParam tests saving query parameters from redirect location
 func TestValidator_SaveRedirectQueryParam(t *testing.T) {
 	spec := schema.ResponseSpec{
-		StatusCode: 302,
+		StatusCode: &schema.StatusCode{Single: 302},
 		Save: schema.NewRegularSave(&schema.SaveSpec{
 			RedirectQueryParams: map[string]string{
 				"test_search": "search",
@@ -206,7 +206,7 @@ func TestValidator_SaveRedirectQueryParam(t *testing.T) {
 // TestValidator_SaveNonExistentKey tests saving a non-existent key (should error)
 func TestValidator_SaveNonExistentKey(t *testing.T) {
 	spec := schema.ResponseSpec{
-		StatusCode: 200,
+		StatusCode: &schema.StatusCode{Single: 200},
 		Save: schema.NewRegularSave(&schema.SaveSpec{
 			Body: map[string]interface{}{
 				"missing": "does.not.exist",
@@ -233,7 +233,7 @@ func TestValidator_SaveNonExistentKey(t *testing.T) {
 // TestValidator_ValidateBodySimple tests simple body validation
 func TestValidator_ValidateBodySimple(t *testing.T) {
 	spec := schema.ResponseSpec{
-		StatusCode: 200,
+		StatusCode: &schema.StatusCode{Single: 200},
 		Body: map[string]interface{}{
 			"key":    "value",
 			"number": 123,
@@ -259,7 +259,7 @@ func TestValidator_ValidateBodySimple(t *testing.T) {
 // but it should not error out either
 func TestValidator_ValidateBodyList(t *testing.T) {
 	spec := schema.ResponseSpec{
-		StatusCode: 200,
+		StatusCode: &schema.StatusCode{Single: 200},
 		// Array validation not fully implemented yet
 		// Body:       []interface{}{"a", 1, "b"},
 	}
@@ -279,7 +279,7 @@ func TestValidator_ValidateBodyList(t *testing.T) {
 // TestValidator_ValidateListInBody tests validation with list inside body
 func TestValidator_ValidateListInBody(t *testing.T) {
 	spec := schema.ResponseSpec{
-		StatusCode: 200,
+		StatusCode: &schema.StatusCode{Single: 200},
 		Body: map[string]interface{}{
 			"items": []interface{}{"a", "b", "c"},
 			"count": 3,
@@ -303,7 +303,7 @@ func TestValidator_ValidateListInBody(t *testing.T) {
 // TestValidator_ValidateNestedBody tests nested body validation
 func TestValidator_ValidateNestedBody(t *testing.T) {
 	spec := schema.ResponseSpec{
-		StatusCode: 200,
+		StatusCode: &schema.StatusCode{Single: 200},
 		Body: map[string]interface{}{
 			"user.name":        "John",
 			"user.profile.age": 30,
@@ -332,7 +332,7 @@ func TestValidator_ValidateNestedBody(t *testing.T) {
 // TestValidator_ValidateHeaders tests header validation
 func TestValidator_ValidateHeaders(t *testing.T) {
 	spec := schema.ResponseSpec{
-		StatusCode: 200,
+		StatusCode: &schema.StatusCode{Single: 200},
 		Headers: map[string]interface{}{
 			"Content-Type": "application/json",
 			"X-Custom":     "test-value",
@@ -357,7 +357,7 @@ func TestValidator_ValidateHeaders(t *testing.T) {
 // TestValidator_ValidateStatusCode tests status code validation
 func TestValidator_ValidateStatusCode(t *testing.T) {
 	spec := schema.ResponseSpec{
-		StatusCode: 200,
+		StatusCode: &schema.StatusCode{Single: 200},
 	}
 
 	validator := NewRestValidator("test", spec, &Config{Variables: map[string]interface{}{}})
@@ -372,7 +372,7 @@ func TestValidator_ValidateStatusCode(t *testing.T) {
 // TestValidator_IncorrectStatusCode tests validation failure with wrong status code
 func TestValidator_IncorrectStatusCode(t *testing.T) {
 	spec := schema.ResponseSpec{
-		StatusCode: 200,
+		StatusCode: &schema.StatusCode{Single: 200},
 	}
 
 	validator := NewRestValidator("test", spec, &Config{Variables: map[string]interface{}{}})
@@ -390,7 +390,7 @@ func TestValidator_IncorrectStatusCode(t *testing.T) {
 // TestValidator_ValidateAndSave tests simultaneous validation and saving
 func TestValidator_ValidateAndSave(t *testing.T) {
 	spec := schema.ResponseSpec{
-		StatusCode: 200,
+		StatusCode: &schema.StatusCode{Single: 200},
 		Body: map[string]interface{}{
 			"status": "success",
 			"code":   "abc123",
@@ -421,7 +421,7 @@ func TestValidator_ValidateAndSave(t *testing.T) {
 // TestValidator_NumberComparison tests number type comparison (int vs float64)
 func TestValidator_NumberComparison(t *testing.T) {
 	spec := schema.ResponseSpec{
-		StatusCode: 200,
+		StatusCode: &schema.StatusCode{Single: 200},
 		Body: map[string]interface{}{
 			"count":    10,    // int in spec
 			"price":    19.99, // float in spec
@@ -448,7 +448,7 @@ func TestValidator_NumberComparison(t *testing.T) {
 // TestValidator_InvalidBodyValue tests validation failure with wrong body value
 func TestValidator_InvalidBodyValue(t *testing.T) {
 	spec := schema.ResponseSpec{
-		StatusCode: 200,
+		StatusCode: &schema.StatusCode{Single: 200},
 		Body: map[string]interface{}{
 			"key": "expected",
 		},
@@ -473,7 +473,7 @@ func TestValidator_InvalidBodyValue(t *testing.T) {
 // TestValidator_InvalidHeaderValue tests validation failure with wrong header value
 func TestValidator_InvalidHeaderValue(t *testing.T) {
 	spec := schema.ResponseSpec{
-		StatusCode: 200,
+		StatusCode: &schema.StatusCode{Single: 200},
 		Headers: map[string]interface{}{
 			"Content-Type": "application/json",
 		},
@@ -496,7 +496,7 @@ func TestValidator_InvalidHeaderValue(t *testing.T) {
 // TestValidator_MissingRequiredHeader tests validation failure with missing header
 func TestValidator_MissingRequiredHeader(t *testing.T) {
 	spec := schema.ResponseSpec{
-		StatusCode: 200,
+		StatusCode: &schema.StatusCode{Single: 200},
 		Headers: map[string]interface{}{
 			"X-Required": "value",
 		},
@@ -525,7 +525,7 @@ func TestValidator_VariableSubstitutionInExpected(t *testing.T) {
 	}
 
 	spec := schema.ResponseSpec{
-		StatusCode: 200,
+		StatusCode: &schema.StatusCode{Single: 200},
 		Body: map[string]interface{}{
 			"name": "{expected_name}",
 			"age":  "{expected_age}",
@@ -549,7 +549,7 @@ func TestValidator_VariableSubstitutionInExpected(t *testing.T) {
 // TestValidator_ValidateArrayResponse tests validating array responses (tavern-py bdeb7c7 feature)
 func TestValidator_ValidateArrayResponse(t *testing.T) {
 	spec := schema.ResponseSpec{
-		StatusCode: 200,
+		StatusCode: &schema.StatusCode{Single: 200},
 		Body: []interface{}{
 			map[string]interface{}{"id": 1, "name": "Alice"},
 			map[string]interface{}{"id": 2, "name": "Bob"},
@@ -573,7 +573,7 @@ func TestValidator_ValidateArrayResponse(t *testing.T) {
 // TestValidator_ValidateArrayPrimitives tests validating arrays of primitive values
 func TestValidator_ValidateArrayPrimitives(t *testing.T) {
 	spec := schema.ResponseSpec{
-		StatusCode: 200,
+		StatusCode: &schema.StatusCode{Single: 200},
 		Body:       []interface{}{1, "text", 3.14},
 	}
 
@@ -591,7 +591,7 @@ func TestValidator_ValidateArrayPrimitives(t *testing.T) {
 // TestValidator_ValidateNestedArray tests validating nested arrays
 func TestValidator_ValidateNestedArray(t *testing.T) {
 	spec := schema.ResponseSpec{
-		StatusCode: 200,
+		StatusCode: &schema.StatusCode{Single: 200},
 		Body: []interface{}{
 			[]interface{}{1, 2, 3},
 			[]interface{}{4, 5, 6},
@@ -615,7 +615,7 @@ func TestValidator_ValidateNestedArray(t *testing.T) {
 // TestValidator_ValidateArrayTypeMismatch tests error when expected array but got object
 func TestValidator_ValidateArrayTypeMismatch(t *testing.T) {
 	spec := schema.ResponseSpec{
-		StatusCode: 200,
+		StatusCode: &schema.StatusCode{Single: 200},
 		Body:       []interface{}{1, 2, 3},
 	}
 
@@ -634,7 +634,7 @@ func TestValidator_ValidateArrayTypeMismatch(t *testing.T) {
 // TestValidator_ValidateDictTypeMismatch tests error when expected object but got array
 func TestValidator_ValidateDictTypeMismatch(t *testing.T) {
 	spec := schema.ResponseSpec{
-		StatusCode: 200,
+		StatusCode: &schema.StatusCode{Single: 200},
 		Body:       map[string]interface{}{"key": "value"},
 	}
 
@@ -652,7 +652,7 @@ func TestValidator_ValidateDictTypeMismatch(t *testing.T) {
 // TestValidator_ValidateArrayIndexOutOfRange tests error when expected array has more elements than actual
 func TestValidator_ValidateArrayIndexOutOfRange(t *testing.T) {
 	spec := schema.ResponseSpec{
-		StatusCode: 200,
+		StatusCode: &schema.StatusCode{Single: 200},
 		Body:       []interface{}{"a", 1, "b", "c"}, // Expect 4 elements
 	}
 
@@ -671,7 +671,7 @@ func TestValidator_ValidateArrayIndexOutOfRange(t *testing.T) {
 // TestValidator_ValidateArrayValueMismatch tests error when array values don't match
 func TestValidator_ValidateArrayValueMismatch(t *testing.T) {
 	spec := schema.ResponseSpec{
-		StatusCode: 200,
+		StatusCode: &schema.StatusCode{Single: 200},
 		Body:       []interface{}{1, 2, 3},
 	}
 
@@ -690,7 +690,7 @@ func TestValidator_ValidateArrayValueMismatch(t *testing.T) {
 // TestValidator_ValidateArrayPartial tests partial array validation (tavern-py behavior)
 func TestValidator_ValidateArrayPartial(t *testing.T) {
 	spec := schema.ResponseSpec{
-		StatusCode: 200,
+		StatusCode: &schema.StatusCode{Single: 200},
 		Body:       []interface{}{1, 2}, // Only validate first 2 elements
 	}
 
@@ -709,7 +709,7 @@ func TestValidator_ValidateArrayPartial(t *testing.T) {
 func TestValidator_InvalidStatusCodeWarning(t *testing.T) {
 	// Use a non-standard status code that will trigger the warning
 	spec := schema.ResponseSpec{
-		StatusCode: 999, // Valid but uncommon code
+		StatusCode: &schema.StatusCode{Single: 999}, // Valid but uncommon code
 	}
 
 	// This should not panic, just log a warning
@@ -718,7 +718,7 @@ func TestValidator_InvalidStatusCodeWarning(t *testing.T) {
 
 	// Test with a completely invalid status code
 	spec2 := schema.ResponseSpec{
-		StatusCode: 231234, // Completely invalid
+		StatusCode: &schema.StatusCode{Single: 231234}, // Completely invalid
 	}
 
 	validator2 := NewRestValidator("test", spec2, &Config{Variables: map[string]interface{}{}})

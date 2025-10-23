@@ -1,0 +1,58 @@
+---
+test_name: Test multiple status codes support
+
+includes:
+  - !include common.yaml
+
+stages:
+  - name: Accept 200 (list format)
+    request:
+      url: "{host}/echo"
+      method: POST
+      json:
+        test: "multiple_status_codes"
+    response:
+      status_code:
+        - 200
+        - 201
+        - 202
+      body:
+        test: "multiple_status_codes"
+
+  - name: Accept 200 (inline array format)
+    request:
+      url: "{host}/echo"
+      method: POST
+      json:
+        test: "inline_array"
+    response:
+      status_code: [200, 201, 202]
+      body:
+        test: "inline_array"
+
+  - name: Single status code (backward compatibility)
+    request:
+      url: "{host}/echo"
+      method: POST
+      json:
+        test: "single_status"
+    response:
+      status_code: 200
+      body:
+        test: "single_status"
+
+---
+test_name: Test multiple status codes with actual endpoint
+
+includes:
+  - !include common.yaml
+
+stages:
+  - name: GET request can return 200
+    request:
+      url: "{host}/fake_dictionary"
+      method: GET
+    response:
+      status_code: [200, 201]
+      body:
+        top: !anything

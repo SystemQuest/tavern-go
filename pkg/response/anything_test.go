@@ -10,7 +10,7 @@ import (
 // TestValidator_AnythingMarker tests the !anything marker support
 func TestValidator_AnythingMarker(t *testing.T) {
 	spec := schema.ResponseSpec{
-		StatusCode: 200,
+		StatusCode: &schema.StatusCode{Single: 200},
 		Body: map[string]interface{}{
 			"user.id":         "<<ANYTHING>>", // Should accept any value
 			"user.name":       "John",         // Should validate exactly
@@ -38,7 +38,7 @@ func TestValidator_AnythingMarker(t *testing.T) {
 // TestValidator_AnythingMarkerInArray tests !anything in arrays
 func TestValidator_AnythingMarkerInArray(t *testing.T) {
 	spec := schema.ResponseSpec{
-		StatusCode: 200,
+		StatusCode: &schema.StatusCode{Single: 200},
 		Body: map[string]interface{}{
 			"items": []interface{}{
 				"<<ANYTHING>>", // First item can be anything
@@ -68,7 +68,7 @@ func TestValidator_AnythingMarkerInArray(t *testing.T) {
 // TestValidator_AnythingMarkerStillValidatesStructure tests that !anything doesn't skip validation entirely
 func TestValidator_AnythingMarkerStillValidatesStructure(t *testing.T) {
 	spec := schema.ResponseSpec{
-		StatusCode: 200,
+		StatusCode: &schema.StatusCode{Single: 200},
 		Body: map[string]interface{}{
 			"user.id":   "<<ANYTHING>>",
 			"user.name": "John",
@@ -95,7 +95,7 @@ func TestValidator_AnythingMarkerStillValidatesStructure(t *testing.T) {
 // TestValidator_AnythingMarkerWithWrongValue tests that other fields still validate correctly
 func TestValidator_AnythingMarkerWithWrongValue(t *testing.T) {
 	spec := schema.ResponseSpec{
-		StatusCode: 200,
+		StatusCode: &schema.StatusCode{Single: 200},
 		Body: map[string]interface{}{
 			"user.id":   "<<ANYTHING>>",
 			"user.name": "John", // This should still be validated

@@ -36,7 +36,7 @@ func TestRunner_Success(t *testing.T) {
 					Method: "GET",
 				},
 				Response: &schema.ResponseSpec{
-					StatusCode: 200,
+					StatusCode: &schema.StatusCode{Single: 200},
 					Body: map[string]interface{}{
 						"key": "value",
 					},
@@ -77,7 +77,7 @@ func TestRunner_InvalidStatusCode(t *testing.T) {
 					Method: "GET",
 				},
 				Response: &schema.ResponseSpec{
-					StatusCode: 200,
+					StatusCode: &schema.StatusCode{Single: 200},
 				},
 			},
 		},
@@ -116,7 +116,7 @@ func TestRunner_InvalidBody(t *testing.T) {
 					Method: "GET",
 				},
 				Response: &schema.ResponseSpec{
-					StatusCode: 200,
+					StatusCode: &schema.StatusCode{Single: 200},
 					Body: map[string]interface{}{
 						"key": "value",
 					},
@@ -158,7 +158,7 @@ func TestRunner_InvalidHeaders(t *testing.T) {
 					Method: "GET",
 				},
 				Response: &schema.ResponseSpec{
-					StatusCode: 200,
+					StatusCode: &schema.StatusCode{Single: 200},
 					Headers: map[string]interface{}{
 						"content-type": "application/json",
 					},
@@ -211,7 +211,7 @@ func TestRunner_MultiStage(t *testing.T) {
 					Method: "POST",
 				},
 				Response: &schema.ResponseSpec{
-					StatusCode: 200,
+					StatusCode: &schema.StatusCode{Single: 200},
 					Body: map[string]interface{}{
 						"token": "abc123",
 					},
@@ -224,7 +224,7 @@ func TestRunner_MultiStage(t *testing.T) {
 					Method: "GET",
 				},
 				Response: &schema.ResponseSpec{
-					StatusCode: 200,
+					StatusCode: &schema.StatusCode{Single: 200},
 					Body: map[string]interface{}{
 						"result": "success",
 					},
@@ -277,7 +277,7 @@ func TestRunner_VariableFlow(t *testing.T) {
 					Method: "POST",
 				},
 				Response: &schema.ResponseSpec{
-					StatusCode: 200,
+					StatusCode: &schema.StatusCode{Single: 200},
 					Save: schema.NewRegularSave(&schema.SaveSpec{
 						Body: map[string]interface{}{
 							"auth_token": "token",
@@ -295,7 +295,7 @@ func TestRunner_VariableFlow(t *testing.T) {
 					},
 				},
 				Response: &schema.ResponseSpec{
-					StatusCode: 200,
+					StatusCode: &schema.StatusCode{Single: 200},
 					Body: map[string]interface{}{
 						"authenticated": true,
 					},
@@ -393,7 +393,7 @@ func TestRunner_IncludeFiles(t *testing.T) {
 					},
 				},
 				Response: &schema.ResponseSpec{
-					StatusCode: 200,
+					StatusCode: &schema.StatusCode{Single: 200},
 					Body: map[string]interface{}{
 						"status": "authorized",
 					},
@@ -465,7 +465,7 @@ func TestRunner_IncludeFilesWithEnvVars(t *testing.T) {
 					Method: "GET",
 				},
 				Response: &schema.ResponseSpec{
-					StatusCode: 200,
+					StatusCode: &schema.StatusCode{Single: 200},
 					Body: map[string]interface{}{
 						"status": "OK",
 					},

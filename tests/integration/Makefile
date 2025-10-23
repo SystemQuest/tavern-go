@@ -39,6 +39,18 @@ test:
 	@TEST_HOST=http://localhost:5000 SECOND_URL_PART=again ../../bin/tavern test_anybool.tavern.yaml
 	@echo "Testing type conversions..."
 	@TEST_HOST=http://localhost:5000 SECOND_URL_PART=again ../../bin/tavern test_typeconvert.tavern.yaml
+	@echo "Testing form encoded data..."
+	@TEST_HOST=http://localhost:5000 SECOND_URL_PART=again ../../bin/tavern test_formencoded.tavern.yaml
+	@echo "Testing nested variables..."
+	@TEST_HOST=http://localhost:5000 SECOND_URL_PART=again ../../bin/tavern test_nested_vars.tavern.yaml
+	@echo "Testing only stage keyword..."
+	@TEST_HOST=http://localhost:5000 SECOND_URL_PART=again ../../bin/tavern test_only_stage.tavern.yaml
+	@echo "Testing skipped stages..."
+	@TEST_HOST=http://localhost:5000 SECOND_URL_PART=again ../../bin/tavern test_skipped_stages.tavern.yaml
+	@echo "Testing strict key checks..."
+	@TEST_HOST=http://localhost:5000 SECOND_URL_PART=again ../../bin/tavern test_strict_key_checks.tavern.yaml
+	@echo "Testing multiple status codes..."
+	@TEST_HOST=http://localhost:5000 BASE_URL=http://localhost:5000 SECOND_URL_PART=again ../../bin/tavern test_multiple_status_codes.tavern.yaml
 	@echo "✅ All tests passed!"
 
 # Run tests with verbose output
@@ -62,6 +74,18 @@ test-verbose:
 	@TEST_HOST=http://localhost:5000 SECOND_URL_PART=again ../../bin/tavern -v test_anybool.tavern.yaml
 	@echo "Testing type conversions..."
 	@TEST_HOST=http://localhost:5000 SECOND_URL_PART=again ../../bin/tavern -v test_typeconvert.tavern.yaml
+	@echo "Testing form encoded data..."
+	@TEST_HOST=http://localhost:5000 SECOND_URL_PART=again ../../bin/tavern -v test_formencoded.tavern.yaml
+	@echo "Testing nested variables..."
+	@TEST_HOST=http://localhost:5000 SECOND_URL_PART=again ../../bin/tavern -v test_nested_vars.tavern.yaml
+	@echo "Testing only stage keyword..."
+	@TEST_HOST=http://localhost:5000 SECOND_URL_PART=again ../../bin/tavern -v test_only_stage.tavern.yaml
+	@echo "Testing skipped stages..."
+	@TEST_HOST=http://localhost:5000 SECOND_URL_PART=again ../../bin/tavern -v test_skipped_stages.tavern.yaml
+	@echo "Testing strict key checks..."
+	@TEST_HOST=http://localhost:5000 SECOND_URL_PART=again ../../bin/tavern -v test_strict_key_checks.tavern.yaml
+	@echo "Testing multiple status codes..."
+	@TEST_HOST=http://localhost:5000 BASE_URL=http://localhost:5000 SECOND_URL_PART=again ../../bin/tavern -v test_multiple_status_codes.tavern.yaml
 
 # Quick test - start server in background, run tests, stop server
 quick-test: build
@@ -104,4 +128,14 @@ help:
 	@echo "  - test_response_types.tavern.yaml   (list/array responses)"
 	@echo "  - test_typetokens.tavern.yaml       (!anything marker)"
 	@echo "  - test_env_var_format.tavern.yaml   (env vars in includes)"
+	@echo "  - test_files.tavern.yaml            (file uploads)"
+	@echo "  - test_regex.tavern.yaml            (regex validation)"
+	@echo "  - test_anybool.tavern.yaml          (!anybool matcher)"
+	@echo "  - test_typeconvert.tavern.yaml      (type conversions)"
+	@echo "  - test_formencoded.tavern.yaml      (form encoded data)"
+	@echo "  - test_nested_vars.tavern.yaml      (nested variable access)"
+	@echo "  - test_only_stage.tavern.yaml       (only keyword isolation)"
+	@echo "  - test_skipped_stages.tavern.yaml   (skip keyword)"
+	@echo "  - test_strict_key_checks.tavern.yaml (strict mode & _xfail)"
+	@echo "  - test_multiple_status_codes.tavern.yaml (multiple status codes)"
 

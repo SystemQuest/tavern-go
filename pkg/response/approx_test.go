@@ -11,7 +11,7 @@ import (
 // Aligned with tavern-py commit 53690cf: Feature/approx numbers (#101)
 func TestValidator_ApproxMarker(t *testing.T) {
 	spec := schema.ResponseSpec{
-		StatusCode: 200,
+		StatusCode: &schema.StatusCode{Single: 200},
 		Body: map[string]interface{}{
 			"pi":    "<<APPROX>>3.1415926",     // Should match math.Pi
 			"e":     "<<APPROX>>2.71828",       // Should match math.E approximately
@@ -37,7 +37,7 @@ func TestValidator_ApproxMarker(t *testing.T) {
 // TestValidator_ApproxMarkerOutOfTolerance tests !approx with values outside tolerance
 func TestValidator_ApproxMarkerOutOfTolerance(t *testing.T) {
 	spec := schema.ResponseSpec{
-		StatusCode: 200,
+		StatusCode: &schema.StatusCode{Single: 200},
 		Body: map[string]interface{}{
 			"value": "<<APPROX>>3.14", // Expecting approximately 3.14
 		},
@@ -61,7 +61,7 @@ func TestValidator_ApproxMarkerOutOfTolerance(t *testing.T) {
 // TestValidator_ApproxMarkerIntegers tests !approx with integer values
 func TestValidator_ApproxMarkerIntegers(t *testing.T) {
 	spec := schema.ResponseSpec{
-		StatusCode: 200,
+		StatusCode: &schema.StatusCode{Single: 200},
 		Body: map[string]interface{}{
 			"count": "<<APPROX>>100", // Expecting approximately 100
 		},
@@ -84,7 +84,7 @@ func TestValidator_ApproxMarkerIntegers(t *testing.T) {
 // TestValidator_ApproxMarkerInvalidType tests !approx with non-numeric types
 func TestValidator_ApproxMarkerInvalidType(t *testing.T) {
 	spec := schema.ResponseSpec{
-		StatusCode: 200,
+		StatusCode: &schema.StatusCode{Single: 200},
 		Body: map[string]interface{}{
 			"value": "<<APPROX>>3.14",
 		},
@@ -108,7 +108,7 @@ func TestValidator_ApproxMarkerInvalidType(t *testing.T) {
 // TestValidator_ApproxMarkerVerySmallNumbers tests !approx with very small numbers
 func TestValidator_ApproxMarkerVerySmallNumbers(t *testing.T) {
 	spec := schema.ResponseSpec{
-		StatusCode: 200,
+		StatusCode: &schema.StatusCode{Single: 200},
 		Body: map[string]interface{}{
 			"epsilon": "<<APPROX>>0.000001", // Very small number
 		},

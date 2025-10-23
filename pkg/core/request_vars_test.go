@@ -47,7 +47,7 @@ func TestRunner_RequestVars(t *testing.T) {
 					},
 				},
 				Response: &schema.ResponseSpec{
-					StatusCode: 200,
+					StatusCode: &schema.StatusCode{Single: 200},
 					Body: map[string]interface{}{
 						// Use request_vars to validate server echoed correctly
 						"method":       "{tavern.request_vars.method}",
@@ -94,7 +94,7 @@ func TestRunner_RequestVarsHeaders(t *testing.T) {
 					},
 				},
 				Response: &schema.ResponseSpec{
-					StatusCode: 200,
+					StatusCode: &schema.StatusCode{Single: 200},
 					Body: map[string]interface{}{
 						"auth_header": "{tavern.request_vars.headers.Authorization}",
 					},
@@ -140,7 +140,7 @@ func TestRunner_RequestVarsParams(t *testing.T) {
 					},
 				},
 				Response: &schema.ResponseSpec{
-					StatusCode: 200,
+					StatusCode: &schema.StatusCode{Single: 200},
 					Body: map[string]interface{}{
 						"search": "{tavern.request_vars.params.q}",
 						"page":   "{tavern.request_vars.params.page}",
@@ -188,7 +188,7 @@ func TestRunner_RequestVarsCleanup(t *testing.T) {
 					},
 				},
 				Response: &schema.ResponseSpec{
-					StatusCode: 200,
+					StatusCode: &schema.StatusCode{Single: 200},
 				},
 			},
 			{
@@ -201,7 +201,7 @@ func TestRunner_RequestVarsCleanup(t *testing.T) {
 					},
 				},
 				Response: &schema.ResponseSpec{
-					StatusCode: 200,
+					StatusCode: &schema.StatusCode{Single: 200},
 				},
 			},
 		},

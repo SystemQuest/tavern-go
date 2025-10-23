@@ -120,7 +120,20 @@
                 "description": "Response key matching strictness at stage level (aligned with tavern-py commit 3838566)"
               },
               "status_code": {
-                "type": "integer"
+                "oneOf": [
+                  {
+                    "type": "integer",
+                    "description": "Single expected status code"
+                  },
+                  {
+                    "type": "array",
+                    "description": "Multiple acceptable status codes (aligned with tavern-py commit af74465)",
+                    "items": {
+                      "type": "integer"
+                    },
+                    "minItems": 1
+                  }
+                ]
               },
               "headers": {
                 "type": "object"
