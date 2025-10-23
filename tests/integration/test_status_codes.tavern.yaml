@@ -1,0 +1,47 @@
+---
+# Test matching one of multiple status codes
+# Aligned with tavern-py commit c21d737: Add integration tests
+
+test_name: Test matching one of multiple status codes
+
+stages:
+  - name: Match one status code
+    request:
+      url: http://localhost:5000/status_code_return
+      method: POST
+      json:
+        status_code: 201
+    response:
+      status_code: 201
+
+  - name: Match one of many
+    request:
+      url: http://localhost:5000/status_code_return
+      method: POST
+      json:
+        status_code: 202
+    response:
+      status_code:
+        - 200
+        - 201
+        - 202
+
+---
+# Test missing from status code list fails
+
+test_name: Test missing from status code list fails
+
+_xfail: run
+
+stages:
+  - name: Missing from status code list
+    request:
+      url: http://localhost:5000/status_code_return
+      method: POST
+      json:
+        status_code: 404
+    response:
+      status_code:
+        - 200
+        - 201
+        - 202

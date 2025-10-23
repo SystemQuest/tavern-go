@@ -51,6 +51,8 @@ test:
 	@TEST_HOST=http://localhost:5000 SECOND_URL_PART=again ../../bin/tavern test_strict_key_checks.tavern.yaml
 	@echo "Testing multiple status codes..."
 	@TEST_HOST=http://localhost:5000 BASE_URL=http://localhost:5000 SECOND_URL_PART=again ../../bin/tavern test_multiple_status_codes.tavern.yaml
+	@echo "Testing status code validation..."
+	@TEST_HOST=http://localhost:5000 SECOND_URL_PART=again ../../bin/tavern --skip-xfail test_status_codes.tavern.yaml
 	@echo "✅ All tests passed!"
 
 # Run tests with verbose output
@@ -86,6 +88,9 @@ test-verbose:
 	@TEST_HOST=http://localhost:5000 SECOND_URL_PART=again ../../bin/tavern -v test_strict_key_checks.tavern.yaml
 	@echo "Testing multiple status codes..."
 	@TEST_HOST=http://localhost:5000 BASE_URL=http://localhost:5000 SECOND_URL_PART=again ../../bin/tavern -v test_multiple_status_codes.tavern.yaml
+	@echo "Testing status code validation..."
+	@TEST_HOST=http://localhost:5000 SECOND_URL_PART=again ../../bin/tavern -v --skip-xfail test_status_codes.tavern.yaml
+	@echo "✅ All tests passed!"
 
 # Quick test - start server in background, run tests, stop server
 quick-test: build

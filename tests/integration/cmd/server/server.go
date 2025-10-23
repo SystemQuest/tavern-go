@@ -216,7 +216,39 @@ func boolTestHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // Echo endpoint - returns the posted JSON body for testing type conversions
-// Aligned with tavern-py commit 897c9d1 (testing type conversion in requests)
+// StatusCodeReturn endpoint - returns empty JSON with status code from request body
+// Aligned with tavern-py commit c21d737: Add integration tests
+func statusCodeReturnHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost && r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var body map[string]interface{}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		http.Error(w, "Failed to decode JSON", http.StatusBadRequest)
+		return
+	}
+
+	// Get status code from request body
+	statusCode := 200 // default
+	if code, ok := body["status_code"]; ok {
+		switch v := code.(type) {
+		case float64:
+			statusCode = int(v)
+		case int:
+			statusCode = v
+		}
+	}
+
+	// Return empty JSON with the requested status code
+	response := map[string]interface{}{}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(statusCode)
+	_ = json.NewEncoder(w).Encode(response)
+}
+
+// Echo endpoint - echoes back the JSON body received in the request
 func echoHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -349,6 +381,7 @@ func main() {
 	http.HandleFunc("/fake_upload_file", fakeUploadFileHandler)
 	http.HandleFunc("/nested/again", nestedAgainHandler)
 	http.HandleFunc("/bool_test", boolTestHandler)
+	http.HandleFunc("/status_code_return", statusCodeReturnHandler) // Aligned with tavern-py commit c21d737
 	http.HandleFunc("/echo", echoHandler)
 	http.HandleFunc("/expect_dtype", expectDtypeHandler)
 	http.HandleFunc("/pi", piHandler)
