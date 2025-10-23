@@ -114,6 +114,34 @@ func (v *RestValidator) verboseLogResponse(resp *http.Response, bodyBytes []byte
 	}
 }
 
+// checkStatusCode validates the response status code and adds appropriate error message
+// Aligned with tavern-py commit ac14484: Check for multiple status codes in response
+func (v *RestValidator) checkStatusCode(statusCode int, expected *schema.StatusCode, body interface{}) {
+	if expected.Contains(statusCode) {
+		v.logger.Debugf("Status code '%d' matched expected '%s'", statusCode, expected.String())
+		return
+	}
+
+	// Special case for 4xx errors - include body in error message for debugging
+	if statusCode >= 400 && statusCode < 500 {
+		bodyStr := ""
+		if body != nil {
+			bodyBytes, err := json.MarshalIndent(body, "", "  ")
+			if err == nil {
+				bodyStr = string(bodyBytes)
+			} else {
+				// If can't marshal as JSON, convert to string
+				bodyStr = fmt.Sprintf("%v", body)
+			}
+		}
+		v.addError(fmt.Sprintf("status code mismatch: expected %s, got %d:\n%s",
+			expected.String(), statusCode, bodyStr))
+	} else {
+		v.addError(fmt.Sprintf("status code mismatch: expected %s, got %d",
+			expected.String(), statusCode))
+	}
+}
+
 // Verify verifies the response and returns saved variables
 func (v *RestValidator) Verify(resp *http.Response) (map[string]interface{}, error) {
 	v.response = resp
@@ -139,12 +167,6 @@ func (v *RestValidator) Verify(resp *http.Response) (map[string]interface{}, err
 		expectedStatus = &schema.StatusCode{Single: 200}
 	}
 
-	// Verify status code - supports single or multiple acceptable codes
-	if !expectedStatus.Contains(resp.StatusCode) {
-		v.addError(fmt.Sprintf("status code mismatch: expected %s, got %d",
-			expectedStatus.String(), resp.StatusCode))
-	}
-
 	// Try to parse as JSON (support both objects and arrays)
 	var bodyData interface{}
 
@@ -155,6 +177,9 @@ func (v *RestValidator) Verify(resp *http.Response) (map[string]interface{}, err
 			bodyData = string(bodyBytes)
 		}
 	}
+
+	// Verify status code - supports single or multiple acceptable codes (aligned with tavern-py commit ac14484)
+	v.checkStatusCode(resp.StatusCode, expectedStatus, bodyData)
 
 	// Verify body
 	if v.spec.Body != nil {

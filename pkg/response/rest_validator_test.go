@@ -387,6 +387,58 @@ func TestValidator_IncorrectStatusCode(t *testing.T) {
 	assert.Contains(t, err.Error(), "200")
 }
 
+// TestValidator_4xxStatusCodeWithBody tests 4xx error includes body in error message
+// Aligned with tavern-py commit ac14484: Check for multiple status codes in response
+func TestValidator_4xxStatusCodeWithBody(t *testing.T) {
+	spec := schema.ResponseSpec{
+		StatusCode: &schema.StatusCode{Single: 200},
+	}
+
+	validator := NewRestValidator("test", spec, &Config{Variables: map[string]interface{}{}})
+
+	// Create response with 4xx status and error body
+	errorBody := map[string]interface{}{
+		"error":   "Bad Request",
+		"message": "Invalid parameter: id",
+	}
+	resp := createMockResponse(400, map[string]string{"Content-Type": "application/json"}, errorBody)
+
+	_, err := validator.Verify(resp)
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "status code mismatch")
+	assert.Contains(t, err.Error(), "400")
+	assert.Contains(t, err.Error(), "200")
+	// Verify body is included in error message for 4xx errors
+	assert.Contains(t, err.Error(), "Bad Request")
+	assert.Contains(t, err.Error(), "Invalid parameter")
+}
+
+// TestValidator_5xxStatusCodeWithoutBody tests 5xx error does NOT include body
+// Aligned with tavern-py commit ac14484: Only 4xx errors show body
+func TestValidator_5xxStatusCodeWithoutBody(t *testing.T) {
+	spec := schema.ResponseSpec{
+		StatusCode: &schema.StatusCode{Single: 200},
+	}
+
+	validator := NewRestValidator("test", spec, &Config{Variables: map[string]interface{}{}})
+
+	// Create response with 5xx status and error body
+	errorBody := map[string]interface{}{
+		"error": "Internal Server Error",
+	}
+	resp := createMockResponse(500, map[string]string{"Content-Type": "application/json"}, errorBody)
+
+	_, err := validator.Verify(resp)
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "status code mismatch")
+	assert.Contains(t, err.Error(), "500")
+	assert.Contains(t, err.Error(), "200")
+	// Verify body is NOT included in error message for 5xx errors
+	assert.NotContains(t, err.Error(), "Internal Server Error")
+}
+
 // TestValidator_ValidateAndSave tests simultaneous validation and saving
 func TestValidator_ValidateAndSave(t *testing.T) {
 	spec := schema.ResponseSpec{
