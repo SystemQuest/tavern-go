@@ -51,7 +51,7 @@ func NewRestValidator(name string, spec schema.ResponseSpec, config *Config) *Re
 		spec:   spec,
 		config: config,
 		errors: make([]string, 0),
-		logger: logrus.New(),
+		logger: logrus.StandardLogger(),
 	}
 }
 

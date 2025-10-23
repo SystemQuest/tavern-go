@@ -54,10 +54,13 @@ func NewRunner(config *Config) (*Runner, error) {
 	logger := logrus.New()
 	if config.Debug {
 		logger.SetLevel(logrus.DebugLevel)
+		logrus.SetLevel(logrus.DebugLevel) // Also set global level for RestValidator
 	} else if config.Verbose {
 		logger.SetLevel(logrus.InfoLevel)
+		logrus.SetLevel(logrus.InfoLevel) // Also set global level for RestValidator
 	} else {
 		logger.SetLevel(logrus.WarnLevel)
+		logrus.SetLevel(logrus.WarnLevel) // Also set global level for RestValidator
 	}
 
 	// Create schema validator
