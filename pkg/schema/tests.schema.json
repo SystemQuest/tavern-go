@@ -38,6 +38,16 @@
             "type": "string",
             "description": "Stage name"
           },
+          "skip": {
+            "type": "boolean",
+            "description": "Skip this stage (aligned with tavern-py commit cfdf901)",
+            "default": false
+          },
+          "only": {
+            "type": "boolean",
+            "description": "Run only this stage and stop (aligned with tavern-py commit cfdf901)",
+            "default": false
+          },
           "delay_before": {
             "type": "number",
             "description": "Delay in seconds before executing the stage",
