@@ -94,18 +94,43 @@ func (r *Runner) RunFile(filename string) error {
 	for i, test := range tests {
 		r.logger.Infof("Running test %d/%d: %s", i+1, len(tests), test.TestName)
 
+		// Track xfail mode (aligned with tavern-py commit 3838566)
+		xfail := test.Xfail
+
 		// Validate test schema
-		if err := r.validator.Validate(test); err != nil {
-			r.logger.Errorf("Schema validation failed for test '%s': %v", test.TestName, err)
+		schemaErr := r.validator.Validate(test)
+		if schemaErr != nil {
+			if xfail == "verify" {
+				r.logger.Infof("Test '%s': xfailing during schema verification", test.TestName)
+				r.logger.Infof("Test passed (expected schema failure): %s", test.TestName)
+				continue
+			}
+			r.logger.Errorf("Schema validation failed for test '%s': %v", test.TestName, schemaErr)
 			if firstError == nil {
-				firstError = err
+				firstError = schemaErr
 			}
 			continue
 		}
 
 		// Run test
-		if err := r.RunTest(test); err != nil {
-			r.logger.Errorf("Test failed: %s: %v", test.TestName, err)
+		runErr := r.RunTest(test)
+		if runErr != nil {
+			if xfail == "run" {
+				r.logger.Infof("Test '%s': xfailing during test execution", test.TestName)
+				r.logger.Infof("Test passed (expected runtime failure): %s", test.TestName)
+				continue
+			}
+			r.logger.Errorf("Test failed: %s: %v", test.TestName, runErr)
+			if firstError == nil {
+				firstError = runErr
+			}
+			continue
+		}
+
+		// If xfail was set but test passed, that's an error
+		if xfail != "" {
+			err := util.NewTestFailError("Expected test to fail but it passed", nil)
+			r.logger.Errorf("Test '%s': expected failure but test passed (xfail=%s)", test.TestName, xfail)
 			if firstError == nil {
 				firstError = err
 			}

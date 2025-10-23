@@ -29,6 +29,22 @@ func NewValidator() (*Validator, error) {
 
 // Validate validates a test specification
 func (v *Validator) Validate(test *TestSpec) error {
+	// Validate strict field at test level (aligned with tavern-py commit 3838566)
+	if test.Strict != nil {
+		if err := test.Strict.Validate(); err != nil {
+			return fmt.Errorf("validation failed:\n  - strict: %s", err)
+		}
+	}
+
+	// Validate strict field at stage level
+	for i, stage := range test.Stages {
+		if stage.Response != nil && stage.Response.Strict != nil {
+			if err := stage.Response.Strict.Validate(); err != nil {
+				return fmt.Errorf("validation failed:\n  - stages[%d].response.strict: %s", i, err)
+			}
+		}
+	}
+
 	// Convert test to JSON for validation
 	testJSON, err := json.Marshal(test)
 	if err != nil {

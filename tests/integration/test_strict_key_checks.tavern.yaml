@@ -10,55 +10,61 @@
 # a_string: abc
 # a_bool: true
 
-# NOTE: The following tests are commented out because tavern-go does not yet support _xfail
-# These tests verify that invalid 'strict' values are rejected during schema validation
+---
 
-# ---
-# 
-# test_name: Test setting 'strict' to a string fails
-# 
-# _xfail: verify
-# 
-# strict: fkd
-# 
-# stages:
-#   - name: match top level
-#     request:
-#       url: "{host}/fake_dictionary"
-#     response:
-#       status_code: 200
-# 
-# ---
-# 
-# test_name: Test setting 'strict' to a dict fails
-# 
-# _xfail: verify
-# 
-# strict:
-#   body: true
-# 
-# stages:
-#   - name: match top level
-#     request:
-#       url: "{host}/fake_dictionary"
-#     response:
-#       status_code: 200
-# 
-# ---
-# 
-# test_name: Test setting 'strict' to a list with invalid values fails
-# 
-# _xfail: verify
-# 
-# strict:
-#   - blokergh
-# 
-# stages:
-#   - name: match top level
-#     request:
-#       url: "{host}/fake_dictionary"
-#     response:
-#       status_code: 200
+test_name: Test setting 'strict' to a string fails
+
+_xfail: verify
+
+strict: fkd
+
+includes:
+  - !include common.yaml
+
+stages:
+  - name: match top level
+    request:
+      url: "{host}/fake_dictionary"
+    response:
+      status_code: 200
+
+---
+
+test_name: Test setting 'strict' to a dict fails
+
+_xfail: verify
+
+strict:
+  body: true
+
+includes:
+  - !include common.yaml
+
+stages:
+  - name: match top level
+    request:
+      url: "{host}/fake_dictionary"
+    response:
+      status_code: 200
+
+---
+
+test_name: Test setting 'strict' to a list with invalid values fails
+
+_xfail: verify
+
+strict:
+  - blokergh
+
+includes:
+  - !include common.yaml
+
+stages:
+  - name: match top level
+    request:
+      url: "{host}/fake_dictionary"
+    response:
+      status_code: 200
 
 ---
 
@@ -130,92 +136,89 @@ stages:
         a_string: abc
         a_bool: true
 
-# NOTE: The following tests are commented out because tavern-go does not yet support _xfail: run
-# These tests verify that strict mode correctly fails when keys are missing
+---
 
-# ---
-# 
-# test_name: Test strict key matching against body fails
-# 
-# _xfail: run
-# 
-# strict:
-#   - body
-# 
-# includes:
-#   - !include common.yaml
-# 
-# stages:
-#   - name: match top level
-#     request:
-#       url: "{host}/fake_dictionary"
-#     response:
-#       status_code: 200
-#       body:
-#         top:
-#           Thing: value
-#           nested:
-#             doubly:
-#               inner: value
-#         an_integer: 123
-#         a_string: abc
-#         # missing
-#         # a_bool: true
-# 
-# ---
-# 
-# test_name: Test strict key matching against body fails with dict missing when specified in test
-# 
-# _xfail: run
-# 
-# strict:
-#   - body
-# 
-# includes:
-#   - !include common.yaml
-# 
-# stages:
-#   - name: match top level
-#     request:
-#       url: "{host}/fake_dictionary"
-#     response:
-#       status_code: 200
-#       body:
-#         # top:
-#         #   Thing: value
-#         #   nested:
-#         #     doubly:
-#         #       inner: value
-#         an_integer: 123
-#         a_string: abc
-#         a_bool: true
-# 
-# ---
-# 
-# test_name: Test strict key matching against body fails with dict missing when specified in stage
-# 
-# _xfail: run
-# 
-# includes:
-#   - !include common.yaml
-# 
-# stages:
-#   - name: match top level
-#     request:
-#       url: "{host}/fake_dictionary"
-#     response:
-#       strict:
-#         - body
-#       status_code: 200
-#       body:
-#         # top:
-#         #   Thing: value
-#         #   nested:
-#         #     doubly:
-#         #       inner: value
-#         an_integer: 123
-#         a_string: abc
-#         a_bool: true
+test_name: Test strict key matching against body fails
+
+_xfail: run
+
+strict:
+  - body
+
+includes:
+  - !include common.yaml
+
+stages:
+  - name: match top level
+    request:
+      url: "{host}/fake_dictionary"
+    response:
+      status_code: 200
+      body:
+        top:
+          Thing: value
+          nested:
+            doubly:
+              inner: value
+        an_integer: 123
+        a_string: abc
+        # missing
+        # a_bool: true
+
+---
+
+test_name: Test strict key matching against body fails with dict missing when specified in test
+
+_xfail: run
+
+strict:
+  - body
+
+includes:
+  - !include common.yaml
+
+stages:
+  - name: match top level
+    request:
+      url: "{host}/fake_dictionary"
+    response:
+      status_code: 200
+      body:
+        # top:
+        #   Thing: value
+        #   nested:
+        #     doubly:
+        #       inner: value
+        an_integer: 123
+        a_string: abc
+        a_bool: true
+
+---
+
+test_name: Test strict key matching against body fails with dict missing when specified in stage
+
+_xfail: run
+
+includes:
+  - !include common.yaml
+
+stages:
+  - name: match top level
+    request:
+      url: "{host}/fake_dictionary"
+    response:
+      strict:
+        - body
+      status_code: 200
+      body:
+        # top:
+        #   Thing: value
+        #   nested:
+        #     doubly:
+        #       inner: value
+        an_integer: 123
+        a_string: abc
+        a_bool: true
 
 ---
 

@@ -8,6 +8,8 @@ import (
 
 // UnmarshalYAML implements custom YAML unmarshaling for Strict
 // It can handle bool, []string, or nil values
+// Note: We store the raw value and defer validation to schema validation phase
+// This allows _xfail: verify tests to test invalid strict values
 func (s *Strict) UnmarshalYAML(node *yaml.Node) error {
 	// Try to unmarshal as bool first
 	var boolVal bool
@@ -16,12 +18,40 @@ func (s *Strict) UnmarshalYAML(node *yaml.Node) error {
 		s.AsBool = boolVal
 		s.IsList = false
 		s.IsLegacy = false
+		s.RawValue = boolVal
 		return nil
 	}
 
 	// Try to unmarshal as []string
 	var listVal []string
 	if err := node.Decode(&listVal); err == nil {
+		s.IsSet = true
+		s.IsList = true
+		s.AsList = listVal
+		s.IsLegacy = false
+		s.RawValue = listVal
+		// Store raw value for later validation (don't validate here to support _xfail tests)
+		return nil
+	}
+
+	// Store raw value for other types (string, map, etc.) for validation error
+	var rawVal interface{}
+	if err := node.Decode(&rawVal); err == nil {
+		s.IsSet = true // Mark as set even for invalid types
+		s.RawValue = rawVal
+	}
+
+	// Don't fail here - let schema validation handle it
+	// This allows _xfail: verify tests to work
+	return nil
+} // Validate checks if the Strict value is valid
+// This should be called during schema validation
+func (s *Strict) Validate() error {
+	if s == nil || !s.IsSet || s.IsLegacy {
+		return nil
+	}
+
+	if s.IsList {
 		// Validate that the list only contains valid response parts
 		validParts := map[string]bool{
 			"body":                  true,
@@ -29,19 +59,25 @@ func (s *Strict) UnmarshalYAML(node *yaml.Node) error {
 			"redirect_query_params": true,
 		}
 
-		for _, part := range listVal {
+		for _, part := range s.AsList {
 			if !validParts[part] {
 				return fmt.Errorf("invalid strict value: %s (must be one of: body, headers, redirect_query_params)", part)
 			}
 		}
-
-		s.IsSet = true
-		s.IsList = true
-		s.AsList = listVal
-		s.IsLegacy = false
 		return nil
 	}
 
+	// For bool values, no validation needed
+	if _, ok := s.RawValue.(bool); ok {
+		return nil
+	}
+
+	// For list values that were already validated
+	if _, ok := s.RawValue.([]string); ok {
+		return nil
+	}
+
+	// Invalid type
 	return fmt.Errorf("strict must be either a boolean or a list of strings")
 }
 

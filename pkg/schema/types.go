@@ -6,6 +6,7 @@ type TestSpec struct {
 	Includes []Include `yaml:"includes,omitempty" json:"includes,omitempty"`
 	Stages   []Stage   `yaml:"stages" json:"stages"`
 	Strict   *Strict   `yaml:"strict,omitempty" json:"strict,omitempty"` // Response key matching strictness
+	Xfail    string    `yaml:"_xfail,omitempty" json:"_xfail,omitempty"` // Expected failure mode: "verify" or "run"
 
 	// Future: Protocol-specific configurations at test level
 	// Following tavern-py's approach: if "mqtt" in test_spec, initialize MQTT client
@@ -99,9 +100,10 @@ type ExtSpec struct {
 // - bool: true = strict at all levels, false = lenient at all levels
 // - []string: strict only for specified parts (e.g., ["body", "headers"])
 type Strict struct {
-	IsSet    bool     // Whether strict was explicitly set
-	AsBool   bool     // Used when strict is a boolean
-	AsList   []string // Used when strict is a list of response parts
-	IsList   bool     // Whether strict is a list
-	IsLegacy bool     // Whether to use legacy behavior (nil/unset)
+	IsSet    bool        // Whether strict was explicitly set
+	AsBool   bool        // Used when strict is a boolean
+	AsList   []string    // Used when strict is a list of response parts
+	IsList   bool        // Whether strict is a list
+	IsLegacy bool        // Whether to use legacy behavior (nil/unset)
+	RawValue interface{} // Raw value from YAML for validation error messages
 }
