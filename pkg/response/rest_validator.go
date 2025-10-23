@@ -541,25 +541,30 @@ func (v *RestValidator) validateBlock(blockName string, actual interface{}, expe
 
 	// Strict key checking (aligned with tavern-py commit 3838566)
 	// Check if there are extra keys in actual that are not in expected
-	if blockStrictness {
-		// Check for extra keys in actual response
-		actualMap, ok := actual.(map[string]interface{})
-		if ok {
-			expectedKeys := make(map[string]bool)
-			for key := range expectedMap {
-				expectedKeys[key] = true
-			}
+	actualMap, ok := actual.(map[string]interface{})
+	if ok {
+		expectedKeys := make(map[string]bool)
+		for key := range expectedMap {
+			expectedKeys[key] = true
+		}
 
-			var extraKeys []string
-			for key := range actualMap {
-				if !expectedKeys[key] {
-					extraKeys = append(extraKeys, key)
-				}
+		var extraKeys []string
+		for key := range actualMap {
+			if !expectedKeys[key] {
+				extraKeys = append(extraKeys, key)
 			}
+		}
 
-			if len(extraKeys) > 0 {
+		if len(extraKeys) > 0 {
+			if blockStrictness {
+				// In strict mode, extra keys are an error
 				v.addError(fmt.Sprintf("%s: extra keys in response (strict mode): %v", blockName, extraKeys))
+			} else if v.config != nil && v.config.Strict != nil && !v.config.Strict.IsLegacy {
+				// If strict is explicitly set to false (not legacy), log a warning
+				// This aligns with tavern-py's behavior in check_keys_match_recursive
+				v.logger.Warnf("%s: extra keys in response: %v", blockName, extraKeys)
 			}
+			// In legacy mode (default), extra keys at top level are silently ignored
 		}
 	}
 }
