@@ -7,6 +7,14 @@
       "type": "string",
       "description": "Name of the test"
     },
+    "_xfail": {
+      "type": "string",
+      "description": "Mark test as expected to fail (aligned with tavern-py commit 7864ed6)",
+      "enum": ["verify", "run"]
+    },
+    "strict": {
+      "description": "Response key matching strictness (aligned with tavern-py commit 3838566)"
+    },
     "includes": {
       "type": "array",
       "description": "Include blocks with variables",
@@ -108,6 +116,9 @@
           "response": {
             "type": "object",
             "properties": {
+              "strict": {
+                "description": "Response key matching strictness at stage level (aligned with tavern-py commit 3838566)"
+              },
               "status_code": {
                 "type": "integer"
               },
