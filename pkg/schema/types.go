@@ -24,6 +24,10 @@ type Include struct {
 type Stage struct {
 	Name string `yaml:"name" json:"name"`
 
+	// Test control keywords (aligned with tavern-py commit cfdf901)
+	Skip bool `yaml:"skip,omitempty" json:"skip,omitempty"` // Skip this stage
+	Only bool `yaml:"only,omitempty" json:"only,omitempty"` // Run only this stage and stop
+
 	// Delay controls (in seconds)
 	DelayBefore *float64 `yaml:"delay_before,omitempty" json:"delay_before,omitempty"`
 	DelayAfter  *float64 `yaml:"delay_after,omitempty" json:"delay_after,omitempty"`

@@ -1,0 +1,37 @@
+# Test only keyword for test isolation
+# Aligned with tavern-py commit cfdf901: Add skip/only keywords for selective/isolated stages
+
+---
+
+test_name: Test 'only' keyword for stage isolation
+
+includes:
+  - !include common.yaml
+
+stages:
+  - name: This is the only stage that should run
+    only: true
+    request:
+      url: "{host}/fake_list"
+      method: GET
+    response:
+      status_code: 200
+      body:
+        - a
+        - b
+        - c
+
+  - name: This stage should be ignored
+    request:
+      url: "{host}/fake_list"
+      method: GET
+    response:
+      status_code: 999  # This should never be validated
+
+  - name: This stage should also be ignored
+    only: true  # Second 'only' is ignored, first one wins
+    request:
+      url: "{host}/fake_list"
+      method: GET
+    response:
+      status_code: 999  # This should never be validated

@@ -189,6 +189,12 @@ func (r *Runner) RunTest(test *schema.TestSpec) error {
 
 	// Run each stage
 	for i, stage := range test.Stages {
+		// Check skip keyword (aligned with tavern-py commit cfdf901)
+		if stage.Skip {
+			r.logger.Infof("Skipping stage %d/%d: %s", i+1, len(test.Stages), stage.Name)
+			continue
+		}
+
 		r.logger.Infof("Running stage %d/%d: %s", i+1, len(test.Stages), stage.Name)
 
 		// Delay before stage execution
@@ -247,6 +253,12 @@ func (r *Runner) RunTest(test *schema.TestSpec) error {
 
 		// Delay after stage execution
 		delay(&stage, "after")
+
+		// Check only keyword - stop after this stage (aligned with tavern-py commit cfdf901)
+		if stage.Only {
+			r.logger.Infof("Only keyword detected, stopping after stage: %s", stage.Name)
+			break
+		}
 	}
 
 	return nil

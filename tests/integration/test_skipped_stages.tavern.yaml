@@ -1,0 +1,29 @@
+# Test skip keyword for selectively ignoring stages
+# Aligned with tavern-py commit cfdf901: Add skip/only keywords for selective/isolated stages
+
+---
+
+test_name: Test 'skip' keyword for selectively ignoring stages
+
+includes:
+  - !include common.yaml
+
+stages:
+  - name: This stage should be skipped
+    skip: true
+    request:
+      url: "{host}/fake_list"
+      method: GET
+    response:
+      status_code: 999  # This should never be validated
+
+  - name: This stage should run normally
+    request:
+      url: "{host}/fake_list"
+      method: GET
+    response:
+      status_code: 200
+      body:
+        - a
+        - b
+        - c
