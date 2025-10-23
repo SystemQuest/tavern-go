@@ -216,6 +216,28 @@ stages:
 
 ---
 
+test_name: Test can't use approx numbers in a request
+# Aligned with tavern-py commit 61065bd: Stop being able to use 'approx' tag in requests
+
+includes:
+  - !include common.yaml
+
+_xfail: verify
+
+stages:
+  - name: Should fail validation
+    request:
+      url: "{host}/pi"
+      method: GET
+      json:
+        pi: !approx 2.4
+        nested:
+          value: 123
+    response:
+      status_code: 200
+
+---
+
 test_name: Match a number approximately
 # Aligned with tavern-py commit 53690cf: Feature/approx numbers (#101)
 

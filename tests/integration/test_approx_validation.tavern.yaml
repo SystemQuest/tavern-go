@@ -1,0 +1,14 @@
+---
+test_name: Test approx in response should work
+# Aligned with tavern-py commit 53690cf: Feature/approx numbers (#101)
+# Also verifies tavern-py commit 61065bd: !approx only allowed in response
+
+stages:
+  - name: Use approx in response
+    request:
+      url: "http://localhost:5000/pi"
+      method: GET
+    response:
+      status_code: 200
+      body:
+        pi: !approx 3.1415926
