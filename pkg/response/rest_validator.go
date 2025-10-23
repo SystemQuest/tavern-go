@@ -337,6 +337,15 @@ func (v *RestValidator) validateBlock(blockName string, actual interface{}, expe
 		return
 	}
 
+	// Determine block-level strictness (aligned with tavern-py commit 3838566)
+	// 'strict' could be a list, in which case we only want to enable strict
+	// key checking for that specific bit of the response
+	var blockStrictness bool
+	if v.config != nil && v.config.Strict != nil {
+		blockStrictness = v.config.Strict.ShouldCheckStrictly(blockName)
+		v.logger.Debugf("Strict key checking for %s: %v", blockName, blockStrictness)
+	}
+
 	// Handle $ext validation before processing other keys
 	if extSpec, hasExt := expectedMap["$ext"]; hasExt {
 		extMap, ok := extSpec.(map[string]interface{})
@@ -532,29 +541,24 @@ func (v *RestValidator) validateBlock(blockName string, actual interface{}, expe
 
 	// Strict key checking (aligned with tavern-py commit 3838566)
 	// Check if there are extra keys in actual that are not in expected
-	if v.config != nil && v.config.Strict != nil {
-		// Determine if we should check strictly for this block
-		shouldCheckStrictly := v.config.Strict.ShouldCheckStrictly(blockName)
+	if blockStrictness {
+		// Check for extra keys in actual response
+		actualMap, ok := actual.(map[string]interface{})
+		if ok {
+			expectedKeys := make(map[string]bool)
+			for key := range expectedMap {
+				expectedKeys[key] = true
+			}
 
-		if shouldCheckStrictly {
-			// Check for extra keys in actual response
-			actualMap, ok := actual.(map[string]interface{})
-			if ok {
-				expectedKeys := make(map[string]bool)
-				for key := range expectedMap {
-					expectedKeys[key] = true
+			var extraKeys []string
+			for key := range actualMap {
+				if !expectedKeys[key] {
+					extraKeys = append(extraKeys, key)
 				}
+			}
 
-				var extraKeys []string
-				for key := range actualMap {
-					if !expectedKeys[key] {
-						extraKeys = append(extraKeys, key)
-					}
-				}
-
-				if len(extraKeys) > 0 {
-					v.addError(fmt.Sprintf("%s: extra keys in response (strict mode): %v", blockName, extraKeys))
-				}
+			if len(extraKeys) > 0 {
+				v.addError(fmt.Sprintf("%s: extra keys in response (strict mode): %v", blockName, extraKeys))
 			}
 		}
 	}
