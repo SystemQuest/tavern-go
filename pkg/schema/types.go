@@ -5,6 +5,7 @@ type TestSpec struct {
 	TestName string    `yaml:"test_name" json:"test_name"`
 	Includes []Include `yaml:"includes,omitempty" json:"includes,omitempty"`
 	Stages   []Stage   `yaml:"stages" json:"stages"`
+	Strict   *Strict   `yaml:"strict,omitempty" json:"strict,omitempty"` // Response key matching strictness
 
 	// Future: Protocol-specific configurations at test level
 	// Following tavern-py's approach: if "mqtt" in test_spec, initialize MQTT client
@@ -75,6 +76,7 @@ type ResponseSpec struct {
 	Body       interface{}            `yaml:"body,omitempty" json:"body,omitempty"`
 	Cookies    []string               `yaml:"cookies,omitempty" json:"cookies,omitempty"` // Expected cookie names
 	Save       *SaveConfig            `yaml:"save,omitempty" json:"save,omitempty"`       // Union type: SaveSpec or ExtSpec
+	Strict     *Strict                `yaml:"strict,omitempty" json:"strict,omitempty"`   // Response key matching strictness for this stage
 }
 
 // SaveSpec specifies what to save from the response
@@ -89,4 +91,17 @@ type ExtSpec struct {
 	Function    string                 `yaml:"function" json:"function"`
 	ExtraArgs   []interface{}          `yaml:"extra_args,omitempty" json:"extra_args,omitempty"`
 	ExtraKwargs map[string]interface{} `yaml:"extra_kwargs,omitempty" json:"extra_kwargs,omitempty"`
+}
+
+// Strict represents the strictness configuration for response key matching
+// It can be:
+// - nil: use default/legacy behavior (top-level keys ignored, nested keys strict)
+// - bool: true = strict at all levels, false = lenient at all levels
+// - []string: strict only for specified parts (e.g., ["body", "headers"])
+type Strict struct {
+	IsSet    bool     // Whether strict was explicitly set
+	AsBool   bool     // Used when strict is a boolean
+	AsList   []string // Used when strict is a list of response parts
+	IsList   bool     // Whether strict is a list
+	IsLegacy bool     // Whether to use legacy behavior (nil/unset)
 }

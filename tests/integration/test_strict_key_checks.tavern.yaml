@@ -1,0 +1,123 @@
+# Test strict key checking functionality
+# Aligned with tavern-py commit 3838566: Add 'strict' argument to recursive key checking
+
+---
+
+test_name: Test legacy key matching against body works (default behavior)
+# Default behavior: top-level keys can be missing (lenient), nested keys are strict
+
+includes:
+  - !include common.yaml
+
+stages:
+  - name: Match with bool missing at top level
+    request:
+      url: "{host}/fake_dictionary"
+    response:
+      status_code: 200
+      body:
+        top:
+          Thing: value
+          nested:
+            doubly:
+              inner: value
+        an_integer: 123
+        a_string: abc
+        # a_bool: true  # Missing top-level key is OK in legacy mode
+
+---
+
+test_name: Test strict false allows extra keys at all levels
+
+strict: !!bool false
+
+includes:
+  - !include common.yaml
+
+stages:
+  - name: Match with keys missing
+    request:
+      url: "{host}/fake_dictionary"
+    response:
+      status_code: 200
+      body:
+        # Only check a few keys, ignore the rest
+        an_integer: 123
+        a_string: abc
+
+---
+
+test_name: Test strict true requires exact match
+
+strict: !!bool true
+
+includes:
+  - !include common.yaml
+
+stages:
+  - name: Match all keys exactly
+    request:
+      url: "{host}/fake_dictionary"
+    response:
+      status_code: 200
+      body:
+        top:
+          Thing: value
+          nested:
+            doubly:
+              inner: value
+        an_integer: 123
+        a_string: abc
+        a_bool: true
+
+---
+
+test_name: Test strict as list checks only body
+
+strict:
+  - body
+
+includes:
+  - !include common.yaml
+
+stages:
+  - name: Body must match exactly
+    request:
+      url: "{host}/fake_dictionary"
+    response:
+      status_code: 200
+      body:
+        top:
+          Thing: value
+          nested:
+            doubly:
+              inner: value
+        an_integer: 123
+        a_string: abc
+        a_bool: true
+
+---
+
+test_name: Test stage-level strict overrides test-level
+
+strict: !!bool false  # Test-level: lenient
+
+includes:
+  - !include common.yaml
+
+stages:
+  - name: Stage requires strict match
+    request:
+      url: "{host}/fake_dictionary"
+    response:
+      strict: !!bool true  # Stage-level: strict (overrides test-level)
+      status_code: 200
+      body:
+        top:
+          Thing: value
+          nested:
+            doubly:
+              inner: value
+        an_integer: 123
+        a_string: abc
+        a_bool: true

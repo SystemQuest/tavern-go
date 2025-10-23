@@ -220,8 +220,26 @@ func (r *Runner) RunTest(test *schema.TestSpec) error {
 				tavernVars["request_vars"] = executor.RequestVars
 			}
 
+			// Determine strict configuration (aligned with tavern-py commit 3838566)
+			// Priority: stage.response.strict > test.strict > config.strict (global)
+			var stageStrict *schema.Strict
+			if stage.Response.Strict != nil {
+				// Stage-level strict overrides all
+				stageStrict = stage.Response.Strict
+				r.logger.Debugf("Using stage-level strict configuration")
+			} else if test.Strict != nil {
+				// Test-level strict
+				stageStrict = test.Strict
+				r.logger.Debugf("Using test-level strict configuration")
+			} else {
+				// Use global/default (legacy behavior)
+				stageStrict = schema.NewStrictLegacy()
+				r.logger.Debugf("Using legacy strict behavior (no strict configured)")
+			}
+
 			validatorConfig := &response.Config{
 				Variables: testConfig.Variables,
+				Strict:    stageStrict,
 			}
 			validator := response.NewRestValidator(stage.Name, *stage.Response, validatorConfig)
 			saved, err := validator.Verify(resp)

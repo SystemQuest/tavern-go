@@ -31,6 +31,7 @@ type RestValidator struct {
 // Config holds validator configuration
 type Config struct {
 	Variables map[string]interface{}
+	Strict    *schema.Strict // Response key matching strictness (aligned with tavern-py commit 3838566)
 }
 
 // NewRestValidator creates a new REST API response validator
@@ -526,6 +527,35 @@ func (v *RestValidator) validateBlock(blockName string, actual interface{}, expe
 		if !compareValues(actualVal, expectedVal) {
 			v.addError(fmt.Sprintf("%s.%s: expected '%v' (type: %T), got '%v' (type: %T)",
 				blockName, key, expectedVal, expectedVal, actualVal, actualVal))
+		}
+	}
+
+	// Strict key checking (aligned with tavern-py commit 3838566)
+	// Check if there are extra keys in actual that are not in expected
+	if v.config != nil && v.config.Strict != nil {
+		// Determine if we should check strictly for this block
+		shouldCheckStrictly := v.config.Strict.ShouldCheckStrictly(blockName)
+
+		if shouldCheckStrictly {
+			// Check for extra keys in actual response
+			actualMap, ok := actual.(map[string]interface{})
+			if ok {
+				expectedKeys := make(map[string]bool)
+				for key := range expectedMap {
+					expectedKeys[key] = true
+				}
+
+				var extraKeys []string
+				for key := range actualMap {
+					if !expectedKeys[key] {
+						extraKeys = append(extraKeys, key)
+					}
+				}
+
+				if len(extraKeys) > 0 {
+					v.addError(fmt.Sprintf("%s: extra keys in response (strict mode): %v", blockName, extraKeys))
+				}
+			}
 		}
 	}
 }
