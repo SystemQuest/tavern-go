@@ -8,6 +8,7 @@ import (
 	"math"
 	"net/http"
 	"os"
+	"strings"
 )
 
 // Token endpoint - returns HTML with a link containing a token
@@ -305,6 +306,38 @@ func piHandler(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewEncoder(w).Encode(response)
 }
 
+// FormData endpoint - handles form-encoded data
+// Aligned with tavern-py commit 689fa39
+func formDataHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Read raw body
+	bodyBytes, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, "Failed to read body", http.StatusBadRequest)
+		return
+	}
+	defer func() { _ = r.Body.Close() }()
+
+	// Parse form-encoded data (key=value format)
+	bodyStr := string(bodyBytes)
+	parts := strings.SplitN(bodyStr, "=", 2)
+
+	response := make(map[string]interface{})
+	if len(parts) == 2 {
+		key := parts[0]
+		value := parts[1]
+		response[key] = value
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(response)
+}
+
 func main() {
 	// Register handlers
 	http.HandleFunc("/token", tokenHandler)
@@ -319,6 +352,7 @@ func main() {
 	http.HandleFunc("/echo", echoHandler)
 	http.HandleFunc("/expect_dtype", expectDtypeHandler)
 	http.HandleFunc("/pi", piHandler)
+	http.HandleFunc("/form_data", formDataHandler)
 
 	// Start server
 	port := 5000

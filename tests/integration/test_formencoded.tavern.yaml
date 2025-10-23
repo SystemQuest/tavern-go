@@ -1,0 +1,21 @@
+# Test sending form encoded data
+# Aligned with tavern-py commit 689fa39: Add basic test for form encoded data
+
+---
+
+test_name: Test sending form encoded data works
+
+includes:
+  - !include common.yaml
+
+stages:
+  - name: Send form data and expect it to be returned
+    request:
+      url: "{host}/form_data"
+      method: POST
+      data:
+        id: abc123
+    response:
+      status_code: 200
+      body:
+        id: abc123
