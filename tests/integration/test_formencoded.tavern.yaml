@@ -9,13 +9,13 @@ includes:
   - !include common.yaml
 
 stages:
-  - name: Send form data and expect it to be returned
+  - name: Send a uuid and expect it to be returned
     request:
       url: "{host}/form_data"
       method: POST
       data:
-        id: abc123
+        id: !uuid &sent_uuid
     response:
       status_code: 200
       body:
-        id: abc123
+        id: *sent_uuid
