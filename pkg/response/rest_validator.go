@@ -55,6 +55,57 @@ func NewRestValidator(name string, spec schema.ResponseSpec, config *Config) *Re
 	}
 }
 
+// verboseLogResponse logs the response with detailed information
+// Aligned with tavern-py commit 32e85d9: Improve logging of HTTP responses
+func (v *RestValidator) verboseLogResponse(resp *http.Response, bodyBytes []byte) {
+	v.logger.Infof("Response: '%s'", resp.Status)
+
+	// Log headers
+	if len(resp.Header) > 0 {
+		headerLog := "Headers:"
+		for k, vals := range resp.Header {
+			for _, val := range vals {
+				headerLog += fmt.Sprintf("\n  %s: %s", k, val)
+			}
+		}
+		v.logger.Debug(headerLog)
+	}
+
+	// Log body (try JSON formatting)
+	if len(bodyBytes) > 0 {
+		var bodyData interface{}
+		if err := json.Unmarshal(bodyBytes, &bodyData); err == nil {
+			// Pretty print JSON
+			prettyJSON, _ := json.MarshalIndent(bodyData, "", "  ")
+			bodyLog := fmt.Sprintf("Body:\n%s", string(prettyJSON))
+			v.logger.Debug(bodyLog)
+		} else {
+			// Non-JSON body
+			v.logger.Debugf("Body: %s", string(bodyBytes))
+		}
+	}
+
+	// Log redirect information if present
+	if location := resp.Header.Get("Location"); location != "" {
+		parsedURL, err := url.Parse(location)
+		if err == nil {
+			redirectPath := fmt.Sprintf("%s://%s%s", parsedURL.Scheme, parsedURL.Host, parsedURL.Path)
+			v.logger.Debugf("Redirect location: %s", redirectPath)
+
+			// Log redirect query parameters
+			if len(parsedURL.Query()) > 0 {
+				queryLog := "Redirect URL query parameters:"
+				for k, vals := range parsedURL.Query() {
+					for _, val := range vals {
+						queryLog += fmt.Sprintf("\n  %s: %s", k, val)
+					}
+				}
+				v.logger.Debug(queryLog)
+			}
+		}
+	}
+}
+
 // Verify verifies the response and returns saved variables
 func (v *RestValidator) Verify(resp *http.Response) (map[string]interface{}, error) {
 	v.response = resp
@@ -68,8 +119,8 @@ func (v *RestValidator) Verify(resp *http.Response) (map[string]interface{}, err
 	}
 	_ = resp.Body.Close()
 
-	// Log response (aligned with tavern-py)
-	v.logger.Infof("Response: '%s' (%s)", resp.Status, string(bodyBytes))
+	// Log response with detailed information (aligned with tavern-py commit 32e85d9)
+	v.verboseLogResponse(resp, bodyBytes)
 
 	// Restore body for further processing
 	resp.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
