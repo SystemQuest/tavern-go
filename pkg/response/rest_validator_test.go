@@ -631,7 +631,8 @@ func TestValidator_ValidateArrayPrimitives(t *testing.T) {
 
 	validator := NewRestValidator("test", spec, &Config{Variables: map[string]interface{}{}})
 
-	body := []interface{}{1, "text", 3.14, "extra"}
+	// tavern-py requires exact length match
+	body := []interface{}{1, "text", 3.14}
 
 	resp := createMockResponse(200, map[string]string{"Content-Type": "application/json"}, body)
 
@@ -717,7 +718,9 @@ func TestValidator_ValidateArrayIndexOutOfRange(t *testing.T) {
 	_, err := validator.Verify(resp)
 
 	assert.Error(t, err, "Should fail when array is shorter than expected")
-	assert.Contains(t, err.Error(), "index out of range")
+	// tavern-py checks length first, not index
+	assert.Contains(t, err.Error(), "length of returned list was different than expected")
+	assert.Contains(t, err.Error(), "expected 4 items, got 3")
 }
 
 // TestValidator_ValidateArrayValueMismatch tests error when array values don't match
@@ -739,22 +742,25 @@ func TestValidator_ValidateArrayValueMismatch(t *testing.T) {
 	assert.Contains(t, err.Error(), "body[1]")
 }
 
-// TestValidator_ValidateArrayPartial tests partial array validation (tavern-py behavior)
-func TestValidator_ValidateArrayPartial(t *testing.T) {
+// TestValidator_ValidateArrayLengthMismatch tests that tavern-py requires exact array length
+func TestValidator_ValidateArrayLengthMismatch(t *testing.T) {
 	spec := schema.ResponseSpec{
 		StatusCode: &schema.StatusCode{Single: 200},
-		Body:       []interface{}{1, 2}, // Only validate first 2 elements
+		Body:       []interface{}{1, 2}, // Expect exactly 2 elements
 	}
 
 	validator := NewRestValidator("test", spec, &Config{Variables: map[string]interface{}{}})
 
-	body := []interface{}{1, 2, 3, 4, 5} // Array is longer, but that's OK
+	body := []interface{}{1, 2, 3, 4, 5} // Array is longer - tavern-py requires exact match
 
 	resp := createMockResponse(200, map[string]string{"Content-Type": "application/json"}, body)
 
 	_, err := validator.Verify(resp)
 
-	assert.NoError(t, err, "Partial array validation should pass (like tavern-py)")
+	// tavern-py does NOT support partial validation - it requires exact length match
+	assert.Error(t, err, "tavern-py requires exact array length match")
+	assert.Contains(t, err.Error(), "length of returned list was different than expected")
+	assert.Contains(t, err.Error(), "expected 2 items, got 5")
 }
 
 // TestValidator_InvalidStatusCodeWarning tests that invalid status codes trigger a warning

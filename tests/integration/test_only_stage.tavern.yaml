@@ -17,9 +17,16 @@ stages:
     response:
       status_code: 200
       body:
+        # tavern-py requires exact length match for lists
         - a
         - b
         - c
+        - 1
+        - 2
+        - 3
+        - -1.0
+        - -2.0
+        - -3.0
 
   - name: This stage should be ignored
     request:

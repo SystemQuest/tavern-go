@@ -601,7 +601,7 @@ func (v *RestValidator) validateBlock(blockName string, actual interface{}, expe
 	}
 }
 
-// validateList validates array responses (similar to tavern-py's yield_keyvals for lists)
+// validateList validates array responses (aligned with tavern-py commit 95ae722)
 func (v *RestValidator) validateList(blockName string, actual interface{}, expected []interface{}) {
 	// Type check: actual must be an array
 	actualList, ok := actual.([]interface{})
@@ -610,13 +610,17 @@ func (v *RestValidator) validateList(blockName string, actual interface{}, expec
 		return
 	}
 
-	// Validate each expected element (partial validation allowed, like tavern-py)
+	// Strict length check (aligned with tavern-py commit 95ae722)
+	// tavern-py requires exact length match for lists
+	if len(expected) != len(actualList) {
+		v.addError(fmt.Sprintf(
+			"%s: length of returned list was different than expected - expected %d items, got %d",
+			blockName, len(expected), len(actualList)))
+		return
+	}
+
+	// Validate each expected element
 	for idx, expectedVal := range expected {
-		if idx >= len(actualList) {
-			v.addError(fmt.Sprintf("%s[%d]: index out of range (array length: %d)",
-				blockName, idx, len(actualList)))
-			continue
-		}
 
 		actualVal := actualList[idx]
 		indexName := fmt.Sprintf("%s[%d]", blockName, idx)
