@@ -81,7 +81,9 @@
                 "type": "object"
               },
               "json": {},
-              "data": {},
+              "data": {
+                "description": "Request body data - supports dict (form-encoded), string (raw), or binary (aligned with tavern-py commit 4f2f276)"
+              },
               "params": {
                 "type": "object"
               },
