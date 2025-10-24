@@ -1,0 +1,59 @@
+# Test data key with different types
+# Aligned with tavern-py commit 4f2f276: Allow sending of raw data in the 'data' key
+
+---
+
+test_name: Test sending form encoded data works
+
+includes:
+  - !include common.yaml
+
+stages:
+  - name: Send form data with dict
+    request:
+      url: "{host}/form_data"
+      method: POST
+      data:
+        id: test-uuid-123
+    response:
+      status_code: 200
+      body:
+        id: test-uuid-123
+
+---
+
+test_name: Test sending raw string data
+
+includes:
+  - !include common.yaml
+
+stages:
+  - name: Send 'OK' string and expect it back
+    request:
+      url: "{host}/expect_raw_data"
+      method: POST
+      data: OK
+    response:
+      status_code: 200
+      body:
+        status: ok
+
+  - name: Send 'DENIED' string and expect it back
+    request:
+      url: "{host}/expect_raw_data"
+      method: POST
+      data: DENIED
+    response:
+      status_code: 401
+      body:
+        status: denied
+
+  - name: Send 'ERR' string and expect error response
+    request:
+      url: "{host}/expect_raw_data"
+      method: POST
+      data: ERR
+    response:
+      status_code: 400
+      body:
+        status: "err: 'ERR'"

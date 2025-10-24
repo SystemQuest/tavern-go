@@ -39,8 +39,8 @@ test:
 	@TEST_HOST=http://localhost:5000 SECOND_URL_PART=again ../../bin/tavern test_anybool.tavern.yaml
 	@echo "Testing type conversions..."
 	@TEST_HOST=http://localhost:5000 SECOND_URL_PART=again ../../bin/tavern test_typeconvert.tavern.yaml
-	@echo "Testing form encoded data..."
-	@TEST_HOST=http://localhost:5000 SECOND_URL_PART=again ../../bin/tavern test_formencoded.tavern.yaml
+	@echo "Testing data key with different types..."
+	@TEST_HOST=http://localhost:5000 SECOND_URL_PART=again ../../bin/tavern test_data_key.tavern.yaml
 	@echo "Testing nested variables..."
 	@TEST_HOST=http://localhost:5000 SECOND_URL_PART=again ../../bin/tavern test_nested_vars.tavern.yaml
 	@echo "Testing only stage keyword..."
@@ -76,8 +76,8 @@ test-verbose:
 	@TEST_HOST=http://localhost:5000 SECOND_URL_PART=again ../../bin/tavern -v test_anybool.tavern.yaml
 	@echo "Testing type conversions..."
 	@TEST_HOST=http://localhost:5000 SECOND_URL_PART=again ../../bin/tavern -v test_typeconvert.tavern.yaml
-	@echo "Testing form encoded data..."
-	@TEST_HOST=http://localhost:5000 SECOND_URL_PART=again ../../bin/tavern -v test_formencoded.tavern.yaml
+	@echo "Testing data key with different types..."
+	@TEST_HOST=http://localhost:5000 SECOND_URL_PART=again ../../bin/tavern -v test_data_key.tavern.yaml
 	@echo "Testing nested variables..."
 	@TEST_HOST=http://localhost:5000 SECOND_URL_PART=again ../../bin/tavern -v test_nested_vars.tavern.yaml
 	@echo "Testing only stage keyword..."
@@ -137,7 +137,7 @@ help:
 	@echo "  - test_regex.tavern.yaml            (regex validation)"
 	@echo "  - test_anybool.tavern.yaml          (!anybool matcher)"
 	@echo "  - test_typeconvert.tavern.yaml      (type conversions)"
-	@echo "  - test_formencoded.tavern.yaml      (form encoded data)"
+	@echo "  - test_data_key.tavern.yaml         (data key with dict/string/binary)"
 	@echo "  - test_nested_vars.tavern.yaml      (nested variable access)"
 	@echo "  - test_only_stage.tavern.yaml       (only keyword isolation)"
 	@echo "  - test_skipped_stages.tavern.yaml   (skip keyword)"

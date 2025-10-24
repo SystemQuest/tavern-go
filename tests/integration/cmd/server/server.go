@@ -370,6 +370,42 @@ func formDataHandler(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewEncoder(w).Encode(response)
 }
 
+// expectRawDataHandler - validates raw data sent in request body
+// Aligned with tavern-py commit 4f2f276: Allow sending of raw data in the 'data' key
+func expectRawDataHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	bodyBytes, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, "Failed to read body", http.StatusBadRequest)
+		return
+	}
+	defer func() { _ = r.Body.Close() }()
+
+	rawData := string(bodyBytes)
+	var response map[string]interface{}
+	var code int
+
+	switch rawData {
+	case "OK":
+		response = map[string]interface{}{"status": "ok"}
+		code = http.StatusOK
+	case "DENIED":
+		response = map[string]interface{}{"status": "denied"}
+		code = http.StatusUnauthorized
+	default:
+		response = map[string]interface{}{"status": fmt.Sprintf("err: '%s'", rawData)}
+		code = http.StatusBadRequest
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(code)
+	_ = json.NewEncoder(w).Encode(response)
+}
+
 func main() {
 	// Register handlers
 	http.HandleFunc("/token", tokenHandler)
@@ -386,6 +422,7 @@ func main() {
 	http.HandleFunc("/expect_dtype", expectDtypeHandler)
 	http.HandleFunc("/pi", piHandler)
 	http.HandleFunc("/form_data", formDataHandler)
+	http.HandleFunc("/expect_raw_data", expectRawDataHandler) // Aligned with tavern-py commit 4f2f276
 
 	// Start server
 	port := 5000

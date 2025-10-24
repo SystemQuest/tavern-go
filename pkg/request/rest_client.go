@@ -286,12 +286,19 @@ func (c *RestClient) buildRequest(spec schema.RequestSpec) (*http.Request, error
 		body = bytes.NewReader(jsonData)
 		contentType = "application/json"
 	} else if spec.Data != nil {
-		// Handle form data
+		// Handle data field - supports dict (form-encoded), string (raw), or bytes (binary)
+		// Aligned with tavern-py commit 4f2f276: Allow sending of raw data in the 'data' key
 		switch v := spec.Data.(type) {
 		case string:
+			// Raw string data (not form-encoded)
 			body = strings.NewReader(v)
-			contentType = "application/x-www-form-urlencoded"
+			// Don't set content-type, let user specify or use default
+		case []byte:
+			// Binary data
+			body = bytes.NewReader(v)
+			// Don't set content-type, let user specify or use default
 		case map[string]interface{}:
+			// Form-encoded data
 			values := url.Values{}
 			for key, val := range v {
 				values.Add(key, fmt.Sprintf("%v", val))
@@ -299,7 +306,7 @@ func (c *RestClient) buildRequest(spec schema.RequestSpec) (*http.Request, error
 			body = strings.NewReader(values.Encode())
 			contentType = "application/x-www-form-urlencoded"
 		default:
-			return nil, fmt.Errorf("unsupported data type: %T", spec.Data)
+			return nil, fmt.Errorf("unsupported data type: %T (expected string, []byte, or map)", spec.Data)
 		}
 	}
 
