@@ -41,6 +41,8 @@ test:
 	@TEST_HOST=http://localhost:5000 SECOND_URL_PART=again ../../bin/tavern test_typeconvert.tavern.yaml
 	@echo "Testing data key with different types..."
 	@TEST_HOST=http://localhost:5000 SECOND_URL_PART=again ../../bin/tavern test_data_key.tavern.yaml
+	@echo "Testing header case insensitivity..."
+	@TEST_HOST=http://localhost:5000 SECOND_URL_PART=again ../../bin/tavern test_header_comparisons.tavern.yaml
 	@echo "Testing nested variables..."
 	@TEST_HOST=http://localhost:5000 SECOND_URL_PART=again ../../bin/tavern test_nested_vars.tavern.yaml
 	@echo "Testing only stage keyword..."
@@ -78,6 +80,8 @@ test-verbose:
 	@TEST_HOST=http://localhost:5000 SECOND_URL_PART=again ../../bin/tavern -v test_typeconvert.tavern.yaml
 	@echo "Testing data key with different types..."
 	@TEST_HOST=http://localhost:5000 SECOND_URL_PART=again ../../bin/tavern -v test_data_key.tavern.yaml
+	@echo "Testing header case insensitivity..."
+	@TEST_HOST=http://localhost:5000 SECOND_URL_PART=again ../../bin/tavern -v test_header_comparisons.tavern.yaml
 	@echo "Testing nested variables..."
 	@TEST_HOST=http://localhost:5000 SECOND_URL_PART=again ../../bin/tavern -v test_nested_vars.tavern.yaml
 	@echo "Testing only stage keyword..."
@@ -138,6 +142,7 @@ help:
 	@echo "  - test_anybool.tavern.yaml          (!anybool matcher)"
 	@echo "  - test_typeconvert.tavern.yaml      (type conversions)"
 	@echo "  - test_data_key.tavern.yaml         (data key with dict/string/binary)"
+	@echo "  - test_header_comparisons.tavern.yaml (header case insensitivity)"
 	@echo "  - test_nested_vars.tavern.yaml      (nested variable access)"
 	@echo "  - test_only_stage.tavern.yaml       (only keyword isolation)"
 	@echo "  - test_skipped_stages.tavern.yaml   (skip keyword)"

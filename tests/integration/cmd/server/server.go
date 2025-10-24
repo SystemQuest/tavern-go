@@ -32,6 +32,7 @@ func headersHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("X-Integration-Value", "_HelloWorld1")
+	w.Header().Set("ATestHEader", "orange")
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write([]byte("OK"))
 }
